@@ -1,0 +1,25 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Package metadata (auto-generated)
+*.egg-info/
+dist/
+build/
+
+# Example outputs (large files)
+examples/examplefiles/*.fits
+examples/examplefiles/*.hdf5
+examples/examplefiles/*.png
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

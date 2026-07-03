@@ -1,0 +1,22 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>astrovodka.beams</title><style>
+body{font-family:'Segoe UI',Arial,sans-serif;max-width:1100px;margin:0 auto;padding:20px;color:#222;background:#fff;line-height:1.6}
+h1{border-bottom:3px solid #4a6d8c;padding-bottom:8px;color:#2c3e50;font-size:28px}
+h2{border-bottom:2px solid #7fa3c4;padding-bottom:5px;color:#3a5a7c;margin-top:40px;font-size:22px}
+h3{color:#4a6d8c;margin-top:30px;font-size:18px}
+.func{background:#f8f9fa;border-left:4px solid #4a6d8c;padding:15px 20px;margin:15px 0;border-radius:0 8px 8px 0}
+.func h4{margin:0 0 8px 0;font-family:Consolas,Monaco,monospace;font-size:15px;color:#1a1a2e}
+.func h4 .name{color:#06c;font-weight:bold}
+.section{margin:8px 0}.section>strong{color:#4a6d8c}
+table{border-collapse:collapse;width:100%}th{text-align:left;background:#e8ecf1;padding:4px 10px;font-size:13px}
+td{padding:3px 10px;font-size:13px;border-bottom:1px solid #eee;vertical-align:top}
+td.n{font-family:monospace;font-weight:bold;white-space:nowrap}td.t{font-family:monospace;color:#666;white-space:nowrap}
+.notes ul{margin:4px 0;padding-left:18px}.notes li{font-size:13px;margin:2px 0}
+.class-desc{background:#eef4f9;padding:10px 18px;border-radius:6px;margin:10px 0;font-size:14px}
+code{background:#f0f0f0;padding:1px 4px;border-radius:3px;font-family:Consolas,Monaco,monospace}
+.note{background:#fff8e1;border-left:3px solid #f0c040;padding:8px 14px;margin:8px 0;font-size:13px}
+.warn{background:#fff0f0;border-left:3px solid #d04040;padding:8px 14px;margin:8px 0;font-size:13px}
+a{color:#06c}
+</style></head><body>
+<h1>astrovodka.beams &mdash; Telescope Beam Models</h1><p class="class-desc">Models the telescope beam. Built-in: <code>GaussianBeam</code> (elliptical 2D Gaussian). Custom beams can be derived from <code>_BaseBeam</code>.</p><h2>GaussianBeam</h2><div class="func"><h4><span class="name">__init__</span>(self, bmaj=15 arcsec, bmin=None, bpa=0 deg, truncate=4.0)</h4><div class="section"><strong>Parameters:</strong><table><tr><th>Name</th><th>Type</th><th>Description</th></tr><tr><td class="n">bmaj</td><td class="t">Quantity[arcsec]</td><td>Beam major axis FWHM (default: 15 arcsec).</td></tr><tr><td class="n">bmin</td><td class="t">Quantity[arcsec] | None</td><td>Beam minor axis FWHM. None = circular, equals bmaj.</td></tr><tr><td class="n">bpa</td><td class="t">Quantity[deg]</td><td>Position angle, East of North (default: 0 deg).</td></tr><tr><td class="n">truncate</td><td class="t">float</td><td>Truncation radius in FWHM units (default: 4.0). Must be &ge; 2.</td></tr></table></div><div class="section"><strong>Returns:</strong> None</div><div class="notes"><ul><li>The beam is integrated over each pixel using a RectBivariateSpline (cubic) for accurate pixel-integrated values.</li><li>Area computed as &pi;&times;bmaj&times;bmin / (4&times;ln2) (Gaussian-equivalent).</li><li>The kernel is stored as <code>self.kernel</code> (2D dimensionless array) after <code>init_kernel()</code>.</li></ul></div></div><div class="func"><h4><span class="name">needs_pad</span>(self)</h4><div class="section"><strong>Returns:</strong> tuple[int, int]</div><div class="notes">Returns (pad_x, pad_y) = half the kernel size. Used to add padding to DataCube before convolution.</div></div><div class="note"><strong>Custom beams:</strong> Inherit from <code>_BaseBeam</code> and implement: <code>f_kernel()</code> (returns callable), <code>kernel_size_px()</code> (returns half-size), and optionally <code>init_beam_header()</code>.</div>
+<p style="text-align:center;color:#999;margin:50px 0 0;font-size:12px">astrovodka v0.2.0 &mdash; beams module</p>
+</body></html>

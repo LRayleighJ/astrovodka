@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "astrovodka"
+version = "0.1.0"
+authors = [
+    { name = "astrovodka developers" },
+]
+description = "Synthetic HI observations from SPH simulations with cosmological distances and K13 HI modeling"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "numpy",
+    "scipy",
+    "astropy",
+    "tqdm",
+]
+
+[project.optional-dependencies]
+parallel = ["multiprocess"]
+hdf5_output = ["h5py"]
+plotting = ["matplotlib"]
+testing = [
+    "pytest",
+    "pytest-cov",
+]
+dev = [
+    "astrovodka[parallel,hdf5_output,plotting,testing]",
+]

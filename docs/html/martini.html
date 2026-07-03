@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><title>astrovodka — Core Pipeline</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif;max-width:1100px;margin:0 auto;padding:20px;color:#222;background:#fff;line-height:1.6}
+h1{border-bottom:3px solid #4a6d8c;padding-bottom:8px;color:#2c3e50;font-size:28px}
+h2{border-bottom:2px solid #7fa3c4;padding-bottom:5px;color:#3a5a7c;margin-top:40px;font-size:22px}
+h3{color:#4a6d8c;margin-top:30px;font-size:18px}
+.func{background:#f8f9fa;border-left:4px solid #4a6d8c;padding:15px 20px;margin:15px 0;border-radius:0 8px 8px 0}
+.func h4{margin:0 0 8px 0;font-family:Consolas,Monaco,monospace;font-size:15px;color:#1a1a2e}
+.func h4 .name{color:#06c;font-weight:bold}
+.section{margin:8px 0}.section>strong{color:#4a6d8c}
+table{border-collapse:collapse;width:100%}th{text-align:left;background:#e8ecf1;padding:4px 10px;font-size:13px}
+td{padding:3px 10px;font-size:13px;border-bottom:1px solid #eee;vertical-align:top}
+td.n{font-family:monospace;font-weight:bold;white-space:nowrap}td.t{font-family:monospace;color:#666;white-space:nowrap}
+.notes ul{margin:4px 0;padding-left:18px}.notes li{font-size:13px;margin:2px 0}
+.class-desc{background:#eef4f9;padding:10px 18px;border-radius:6px;margin:10px 0;font-size:14px}
+code{background:#f0f0f0;padding:1px 4px;border-radius:3px;font-family:Consolas,Monaco,monospace}
+.note{background:#fff8e1;border-left:3px solid #f0c040;padding:8px 14px;margin:8px 0;font-size:13px}
+.warn{background:#fff0f0;border-left:3px solid #d04040;padding:8px 14px;margin:8px 0;font-size:13px}
+a{color:#06c}.idx{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;margin:20px 0}
+.idx a{display:block;background:#f0f4f8;padding:12px 16px;border-radius:6px;text-decoration:none;color:#2c3e50;font-weight:500}
+.idx a:hover{background:#dce6f0}
+</style></head><body>
+<h1>astrovodka.martini — Core Pipeline</h1>
+<p class="class-desc">The <code>Martini</code> class orchestrates the mock-observing pipeline by connecting source, DataCube, beam, noise, spectral model, and SPH kernel.</p>
+
+<h2>Martini</h2>
+
+<div class="func"><h4><span class="name">__init__</span>(self, *, source, datacube, beam=None, noise=None, sph_kernel, spectral_model, quiet=False)</h4>
+<div class="section"><strong>Parameters:</strong>
+<table><tr><th>Name</th><th>Type</th><th>Description</th></tr>
+<tr><td class="n">source</td><td class="t">SPHSource</td><td>HI-emitting source object (required)</td></tr>
+<tr><td class="n">datacube</td><td class="t">DataCube</td><td>Data cube grid definition (required)</td></tr>
+<tr><td class="n">beam</td><td class="t">_BaseBeam | None</td><td>Telescope beam model. <code>None</code> = skip convolution (default: None)</td></tr>
+<tr><td class="n">noise</td><td class="t">_BaseNoise | None</td><td>Noise model. <code>None</code> = skip noise (default: None)</td></tr>
+<tr><td class="n">sph_kernel</td><td class="t">_BaseSPHKernel</td><td>SPH smoothing kernel (required)</td></tr>
+<tr><td class="n">spectral_model</td><td class="t">_BaseSpectrum</td><td>21-cm spectral line model (required)</td></tr>
+<tr><td class="n">quiet</td><td class="t">bool</td><td>Suppress stdout (default: False)</td></tr>
+</table></div>
+<div class="notes"><strong>Notes:</strong><ul>
+<li>All parameters are keyword-only (the <code>*</code> separator).</li>
+<li>During <code>__init__</code>, particles are <strong>pruned</strong> (spatially, spectrally, by mass) to skip non-contributing ones.</li>
+<li>The <code>DataCube._array</code> accumulates flux in units of <code>Jy/pix²</code> after source insertion, then <code>Jy/beam</code> after beam convolution.</li>
+</ul></div></div>
+
+<div class="func"><h4><span class="name">insert_source_in_cube</span>(self, skip_validation=False, progressbar=None, ncpu=1)</h4>
+<div class="section"><strong>Parameters:</strong>
+<table><tr><th>Name</th><th>Type</th><th>Description</th></tr>
+<tr><td class="n">skip_validation</td><td class="t">bool</td><td>Skip SPH kernel accuracy checks (default: False)</td></tr>
+<tr><td class="n">progressbar</td><td class="t">bool | None</td><td>Show tqdm progress bar. <code>None</code> = auto (default: None)</td></tr>
+<tr><td class="n">ncpu</td><td class="t">int</td><td>Number of parallel processes. Requires <code>multiprocess</code> (default: 1)</td></tr>
+</table></div>
+<div class="section"><strong>Returns:</strong> None</div>
+<div class="notes"><strong>Notes:</strong><ul>
+<li>This is the most computationally expensive step — each pixel loops over all nearby particles.</li>
+<li>Parallelism uses <code>multiprocess</code> (dill serialization), NOT <code>multiprocessing</code> (pickle). Install with <code>pip install multiprocess</code>.</li>
+<li>Parallelism is <strong>per-pixel</strong>: each worker processes one pixel independently. Memory overhead is ~1 extra cube array.</li>
+<li>Mass conservation is reported: flux-summed mass should match input HI mass within ~1%.</li>
+<li>Kernel validation checks that smoothing-length-to-pixel-size ratios meet accuracy bounds. Set <code>skip_validation=True</code> to bypass (at accuracy cost).</li>
+</ul></div></div>
+
+<div class="func"><h4><span class="name">convolve_beam</span>(self)</h4>
+<div class="section"><strong>Returns:</strong> None</div>
+<div class="notes"><strong>Notes:</strong><ul>
+<li>Requires <code>beam</code> to be set in Martini.__init__. Warns and skips if None.</li>
+<li>Uses <code>scipy.signal.fftconvolve</code> for FFT-based convolution (fast for large beams).</li>
+<li>After convolution, padding is removed and array units change from <code>Jy/pix²</code> to <code>Jy/beam</code>.</li>
+<li>Raises <code>ValueError</code> if the DataCube padding is insufficient (e.g., beam was changed after init).</li>
+</ul></div></div>
+
+<div class="func"><h4><span class="name">add_noise</span>(self)</h4>
+<div class="section"><strong>Returns:</strong> None</div>
+<div class="notes"><strong>Notes:</strong><ul>
+<li>Requires both <code>beam</code> and <code>noise</code> to be set. Warns and skips if either is None.</li>
+<li>Noise is added <strong>before</strong> beam convolution. The RMS is auto-scaled: <code>rms_pre = rms_post × 2.19568 × √(π × σ_maj × σ_min)</code>.</li>
+<li>Can be called before or after <code>insert_source_in_cube()</code> — unit conversion handles both cases.</li>
+</ul></div></div>
+
+<div class="func"><h4><span class="name">write_fits</span>(self, filename, overwrite=True, obj_name='MOCK', channels=None, dtype=None)</h4>
+<div class="section"><strong>Parameters:</strong>
+<table><tr><th>Name</th><th>Type</th><th>Description</th></tr>
+<tr><td class="n">filename</td><td class="t">str</td><td>Output path. <code>.fits</code> appended if not present.</td></tr>
+<tr><td class="n">overwrite</td><td class="t">bool</td><td>Allow overwriting existing files (default: True)</td></tr>
+<tr><td class="n">obj_name</td><td class="t">str</td><td>OBJECT header field (max 16 chars, truncated if longer)</td></tr>
+<tr><td class="n">dtype</td><td class="t">str | np.dtype | None</td><td>Output data type. <code>None</code> = keep native (default: None)</td></tr>
+</table></div>
+<div class="section"><strong>Returns:</strong> None</div>
+<div class="notes"><strong>Notes:</strong><ul>
+<li>Instrument header: <code>INSTRUME = 'ASTROVODKA'</code>.</li>
+<li>Writes FITS-standard WCS headers (CTYPE, CRPIX, CRVAL, CDELT, CUNIT, SPECSYS, RESTFRQ).</li>
+<li>Array axes are transposed: MARTINI internal <code>(RA, Dec, Chan)</code> → FITS convention <code>(Chan, Dec, RA)</code>.</li>
+<li>Beam parameters (BMAJ, BMIN, BPA) included if beam is available.</li>
+</ul></div></div>
+
+<div class="func"><h4><span class="name">write_hdf5</span>(self, filename, overwrite=True, memmap=False, compact=False, channels=None)</h4>
+<div class="section"><strong>Parameters:</strong>
+<table><tr><th>Name</th><th>Type</th><th>Description</th></tr>
+<tr><td class="n">filename</td><td class="t">str</td><td>Output path. <code>.hdf5</code> appended if not present.</td></tr>
+<tr><td class="n">overwrite</td><td class="t">bool</td><td>Allow overwriting (default: True)</td></tr>
+<tr><td class="n">memmap</td><td class="t">bool</td><td>Create in-memory file, return h5py.File handle (default: False)</td></tr>
+<tr><td class="n">compact</td><td class="t">bool</td><td>Omit RA/Dec/channel coordinate grids (default: False)</td></tr>
+</table></div>
+<div class="section"><strong>Returns:</strong> <code>h5py.File | None</code></div>
+<div class="notes"><strong>Notes:</strong><ul>
+<li>Requires <code>h5py</code> package.</li>
+<li>Saves: <code>FluxCube</code>, <code>Beam</code> (if present), <code>RA</code>, <code>Dec</code>, channel grids.</li>
+<li><code>compact=True</code> omits coordinate arrays to save disk space; coordinates can be reconstructed from WCS attributes.</li>
+</ul></div></div>
+
+<div class="func"><h4><span class="name">write_beam_fits</span>(self, filename, overwrite=True, channels=None)</h4>
+<div class="section"><strong>Parameters:</strong>
+<table><tr><td class="n">filename</td><td class="t">str</td><td>Output path</td></tr>
+<tr><td class="n">overwrite</td><td class="t">bool</td><td>Allow overwriting (default: True)</td></tr>
+</table></div>
+<div class="section"><strong>Returns:</strong> None</div>
+<div class="notes"><strong>Raises:</strong> <code>ValueError</code> if beam is None. Writes the beam image with matching WCS pixel scale.</div></div>
+
+<div class="func"><h4><span class="name">preview</span>(self, max_points=5000, fig=1, lim=None, vlim=None, point_scaling='auto', title='', save=None)</h4>
+<div class="section"><strong>Parameters:</strong>
+<table><tr><th>Name</th><th>Type</th><th>Description</th></tr>
+<tr><td class="n">max_points</td><td class="t">int</td><td>Max particles per panel (random subsample)</td></tr>
+<tr><td class="n">fig</td><td class="t">int | Figure</td><td>Matplotlib figure number or existing figure</td></tr>
+<tr><td class="n">lim</td><td class="t">str | Quantity[deg] | None</td><td>Spatial axis limit. <code>'datacube'</code> = use cube bounds</td></tr>
+<tr><td class="n">vlim</td><td class="t">str | Quantity[km/s] | None</td><td>Velocity axis limit. <code>'datacube'</code> = use cube bounds</td></tr>
+<tr><td class="n">point_scaling</td><td class="t">str</td><td><code>'auto'</code> (scale by HI mass+smoothing) or <code>'fixed'</code></td></tr>
+<tr><td class="n">title</td><td class="t">str</td><td>Figure title</td></tr>
+<tr><td class="n">save</td><td class="t">str | None</td><td>If set, saves figure via <code>plt.savefig(save)</code></td></tr>
+</table></div>
+<div class="section"><strong>Returns:</strong> <code>matplotlib.figure.Figure</code></div>
+<div class="notes"><strong>Notes:</strong><ul>
+<li>3-panel figure: (1) sky projection colored by LOS velocity, (2) RA vs velocity, (3) Dec vs velocity.</li>
+<li>Red boxes show the DataCube spatial/spectral extent.</li>
+<li>Warning emitted if cube spans > 5° or is within 5° of a pole.</li>
+</ul></div></div>
+
+<div class="func"><h4><span class="name">reset</span>(self)</h4>
+<div class="section"><strong>Returns:</strong> None</div>
+<div class="notes">Re-initializes the DataCube with zeros, keeping source + all sub-module configurations. Useful for re-running with different parameters without reloading data.</div></div>
+
+<h2>GlobalProfile</h2>
+<p class="class-desc">Simplified class for spatially-integrated (global) spectra only. No beam, noise, or SPH kernel needed. Particles are not spatially pruned — all particles within the spectral range contribute.</p>
+
+<div class="func"><h4><span class="name">__init__</span>(self, *, source, spectral_model, n_channels, channel_width, spectral_centre=0 km/s, quiet=False)</h4>
+<div class="section"><strong>Parameters:</strong>
+<table><tr><th>Name</th><th>Type</th><th>Description</th></tr>
+<tr><td class="n">source</td><td class="t">SPHSource</td><td>HI source object</td></tr>
+<tr><td class="n">spectral_model</td><td class="t">_BaseSpectrum</td><td>Spectral line model</td></tr>
+<tr><td class="n">n_channels</td><td class="t">int</td><td>Number of spectral channels</td></tr>
+<tr><td class="n">channel_width</td><td class="t">Quantity[km/s | Hz]</td><td>Channel width</td></tr>
+<tr><td class="n">spectral_centre</td><td class="t">Quantity</td><td>Centre of spectral axis (default: 0 km/s)</td></tr>
+<tr><td class="n">quiet</td><td class="t">bool</td><td>Suppress output (default: False)</td></tr>
+</table></div>
+<div class="notes"><strong>Notes:</strong><ul><li>Uses a 1×1 pixel DataCube and DiracDeltaKernel internally.</li><li>Spatial pruning is disabled — every particle contributes if spectrally within range.</li></ul></div></div>
+
+<div class="func"><h4><span class="name">spectrum</span> (property)</h4>
+<div class="section"><strong>Returns:</strong> <code>U.Quantity[U.Jy]</code> — 1D array of flux density per channel.</div>
+<div class="notes"><strong>Notes:</strong> Lazy-evaluated: first access triggers <code>insert_source_in_spectrum()</code>.</div></div>
+
+<div class="func"><h4><span class="name">plot_spectrum</span>(self, fig=1, title='', channels='velocity', show_vsys=True, save=None)</h4>
+<div class="section"><strong>Parameters:</strong>
+<table><tr><td class="n">fig</td><td class="t">int</td><td>Matplotlib figure number</td></tr>
+<tr><td class="n">channels</td><td class="t">str</td><td><code>'velocity'</code> or <code>'frequency'</code> for x-axis</td></tr>
+<tr><td class="n">show_vsys</td><td class="t">bool</td><td>Draw vertical dashed line at systemic velocity</td></tr>
+<tr><td class="n">save</td><td class="t">str | None</td><td>Save figure to file</td></tr>
+</table></div></div>
+
+<p style="text-align:center;color:#999;margin-top:50px;font-size:12px">astrovodka v0.2.0 — martini module</p>
+</body></html>
