@@ -14,19 +14,19 @@ class _BaseBeam(object):
     Implement a radio telescope beam model.
 
     Classes inheriting from _BaseBeam must implement three methods:
-    :meth:`~martini.beams._BaseBeam.f_kernel`,
-    :meth:`~martini.beams._BaseBeam.kernel_size_px` and
-    :meth:`~martini.beams._BaseBeam.init_beam_header`.
+    :meth:`~astrovodka.beams._BaseBeam.f_kernel`,
+    :meth:`~astrovodka.beams._BaseBeam.kernel_size_px` and
+    :meth:`~astrovodka.beams._BaseBeam.init_beam_header`.
 
-    :meth:`~martini.beams._BaseBeam.f_kernel` should return a function accepting
+    :meth:`~astrovodka.beams._BaseBeam.f_kernel` should return a function accepting
     two arguments, the RA and Dec offsets from the beam centroid (provided with
     units of arcsec), and returning the beam amplitude at that location.
 
-    :meth:`~martini.beams._BaseBeam.kernel_px_size` should return a 2-tuple
+    :meth:`~astrovodka.beams._BaseBeam.kernel_px_size` should return a 2-tuple
     containing the half-size (x, y) of the beam image that will be initialized,
     in pixels.
 
-    :meth:`~martini.beams._BaseBeam.init_beam_header` should be defined if the
+    :meth:`~astrovodka.beams._BaseBeam.init_beam_header` should be defined if the
     major/minor axis FWHM of the beam and its position angle are not defined when
     the beam object is initialized, for instance if modelling a particular telescope
     this function can be used to set the (constant) parameters of the beam of that
@@ -48,7 +48,7 @@ class _BaseBeam(object):
 
     See Also
     --------
-    martini.beams.GaussianBeam
+    astrovodka.beams.GaussianBeam
     """
 
     __metaclass__ = ABCMeta
@@ -107,7 +107,7 @@ class _BaseBeam(object):
 
         Parameters
         ----------
-        datacube : ~martini.datacube.DataCube
+        datacube : ~astrovodka.datacube.DataCube
             Data cube to use, cube size is required for pixel size, position &
             velocity centroids.
         """

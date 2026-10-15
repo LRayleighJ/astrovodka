@@ -1,0 +1,19 @@
+# Files to ship in the source distribution on top of what setuptools includes
+# by default (the package, README, LICENSE and pyproject.toml).
+
+include LICENSE
+include NOTICE
+include CHANGELOG.md
+include CITATION.cff
+include CONTRIBUTING.md
+
+# Documentation and examples are useful to have alongside the source, but are
+# not part of the installed package.
+recursive-include docs *.md *.html *.py *.png
+recursive-include examples *.py *.ipynb *.md
+
+# Never ship build leftovers or generated products.
+global-exclude *.py[cod]
+global-exclude __pycache__
+prune examples/outputs
+prune .github

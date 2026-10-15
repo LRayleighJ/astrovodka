@@ -1,0 +1,20 @@
+# Core runtime dependencies of astrovodka.
+#
+# These are the only packages needed for `import astrovodka` and for the
+# physics layer (astrovodka.himodel). Installing the package itself with
+# `pip install -e .` reads the same list from pyproject.toml — this file exists
+# for environments that prefer a plain requirements.txt.
+#
+# For the optional features (TNG data access, HDF5 output, parallelism and
+# plotting) see requirements-dev.txt, or install an extra:
+#
+#     pip install -e ".[hdf5,parallel,plotting]"
+
+numpy>=1.20
+scipy>=1.6
+astropy>=5.0
+tqdm>=4.40
+
+# datacube.py uses typing.Self (PEP 673), which reaches the standard library
+# only in Python 3.11.
+typing_extensions>=4.0; python_version < "3.11"

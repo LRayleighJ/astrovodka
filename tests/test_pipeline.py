@@ -49,10 +49,58 @@ class TestSPHSourceCosmology:
         assert source.distance.unit == U.Mpc
 
     def test_vsys_from_redshift(self):
-        """vsys should be ~c*z for low z."""
-        source = make_test_source(redshift=0.01)
-        expected_vsys = 2998  # km/s for z=0.01
-        assert abs(source.vsys.to_value(U.km / U.s) - expected_vsys) < 20
+        """vsys must use the radio convention, c*z/(1+z), which the cube axis uses.
+
+        Regression test: vsys was previously set to H(z)*D_C. That exceeds c beyond
+        z ~ 0.79 and is 74% too large at z=0.5, throwing the source out of the band.
+        """
+        from astrovodka.cosmology_utils import radio_velocity_from_redshift
+
+        for z in [0.01, 0.1, 0.5, 1.0, 2.0]:
+            source = make_test_source(redshift=z)
+            expected = radio_velocity_from_redshift(z).to(U.km / U.s)
+            assert np.isclose(
+                source.vsys.to_value(U.km / U.s), expected.to_value(U.km / U.s)
+            )
+            # never superluminal, unlike H(z)*D_C
+            assert source.vsys < 3e5 * U.km / U.s
+
+    def test_redshift_velocity_is_consistent_with_radio_doppler(self):
+        """vsys must map back to f_rest/(1+z) under the radio Doppler convention."""
+        from astrovodka.cosmology_utils import HIfreq
+
+        for z in [0.1, 0.5, 1.0]:
+            source = make_test_source(redshift=z)
+            f_obs = source.vsys.to(
+                U.Hz, equivalencies=U.doppler_radio(HIfreq)
+            )
+            expected = (HIfreq / (1 + z)).to(U.Hz)
+            assert np.isclose(f_obs.value, expected.value, rtol=1e-6)
+
+    def test_angular_scale_uses_angular_diameter_distance(self):
+        """The angular size of the source must be set by D_A, not D_L.
+
+        Regression test: particles were placed on the sky at the luminosity distance,
+        so every angular size was too small by (1+z)^2.
+        """
+        from astropy.coordinates import SkyCoord
+
+        z = 0.5
+        r_max = 10 * U.kpc
+        source = make_test_source(N=100, redshift=z, r_kpc=r_max.value)
+        source._init_skycoords()
+        sep = np.max(
+            source.skycoords.separation(
+                SkyCoord(0 * U.deg, 0 * U.deg, frame="icrs")
+            ).deg
+        )
+        expected_deg = (r_max / source.angular_diameter_distance).to_value(
+            U.deg, U.dimensionless_angles()
+        )
+        assert np.isclose(sep, expected_deg, rtol=0.02)
+        # and it must NOT be the D_L prediction (which is smaller by (1+z)^2)
+        wrong_deg = (r_max / source.distance).to_value(U.deg, U.dimensionless_angles())
+        assert not np.isclose(sep, wrong_deg, rtol=0.02)
 
     def test_redshift_vs_distance_mode(self):
         """Redshift mode should give similar results to distance mode at z=0.01."""
@@ -158,7 +206,49 @@ class TestPipelineWithCosmology:
         source = make_test_source(N=100, redshift=0.1, r_kpc=10.0)
         # D_L ~ 460 Mpc at z=0.1 with Planck15
         assert 400 < source.distance.value < 520
-        # vsys ~ 29500 km/s at z=0.1
-        assert 28000 < source.vsys.to_value(U.km / U.s) < 31000
-        # angular_diameter_distance should be set
-        assert hasattr(source, 'angular_diameter_distance')
+        # vsys = c*z/(1+z) ~ 27250 km/s at z=0.1 (radio convention)
+        assert 26000 < source.vsys.to_value(U.km / U.s) < 28500
+        # D_A = D_L/(1+z)^2 must be set and must differ from D_L
+        assert hasattr(source, "angular_diameter_distance")
+        assert np.isclose(
+            source.angular_diameter_distance.value,
+            source.distance.value / (1 + 0.1) ** 2,
+            rtol=1e-6,
+        )
+
+
+class TestMassConservation:
+    """The pipeline must recover the input HI mass at any redshift.
+
+    This is the end-to-end guard for the D_L / D_A split: using the angular diameter
+    distance for the flux normalisation would suppress the recovered mass by (1+z)^4.
+    """
+
+    @pytest.mark.parametrize("z", [0.02, 0.1, 0.5, 1.0])
+    def test_recovered_mass_matches_input(self, z, capsys):
+        source = make_test_source(N=200, redshift=z, r_kpc=10.0)
+        # keep the source resolved at every redshift
+        px_size = max(
+            0.2,
+            (20 * U.kpc / source.angular_diameter_distance).to_value(
+                U.arcsec, U.dimensionless_angles()
+            )
+            / 8,
+        )
+        datacube = DataCube(
+            n_px_x=48, n_px_y=48, n_channels=64,
+            px_size=px_size * U.arcsec,
+            channel_width=20 * U.km / U.s,
+            spectral_centre=source.vsys,
+        )
+        M = Martini(
+            source=source, datacube=datacube,
+            spectral_model=GaussianSpectrum(sigma=7 * U.km / U.s),
+            sph_kernel=CubicSplineKernel(),
+        )
+        M.insert_source_in_cube(progressbar=False)
+        out = capsys.readouterr().out
+        line = [ln for ln in out.splitlines() if "Mass in cube" in ln]
+        assert line, "expected the mass diagnostic to be printed"
+        recovered = float(line[0].split(":")[1].split("solMass")[0])
+        assert np.isclose(recovered, source.input_mass.value, rtol=0.02)

@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Installation and environment setup</title>
+<style>
+:root{--fg:#1c1e21;--muted:#5c6570;--link:#0b62c4;--rule:#d8dee6;--bg:#fff;
+--code-bg:#f4f6f8;--note-bg:#eef4fb;--head:#12395e}
+@media (prefers-color-scheme:dark){:root{--fg:#e6e8eb;--muted:#9aa5b1;--link:#69a8f5;
+--rule:#39404a;--bg:#15181c;--code-bg:#1e2227;--note-bg:#1b2733;--head:#9cc6f0}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);line-height:1.65;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",
+"Noto Sans CJK SC","Noto Sans CJK JP","PingFang SC","Microsoft YaHei",sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:2rem 1.25rem 4rem}
+nav.lang{font-size:.85rem;color:var(--muted);margin-bottom:2rem;
+display:flex;gap:1rem;flex-wrap:wrap;align-items:center}
+nav.lang a{color:var(--link);text-decoration:none}
+nav.lang a:hover{text-decoration:underline}
+h1,h2,h3,h4,h5,h6{color:var(--head);line-height:1.3;margin:2rem 0 .75rem}
+h1{font-size:1.9rem;border-bottom:2px solid var(--rule);padding-bottom:.4rem}
+h2{font-size:1.45rem;border-bottom:1px solid var(--rule);padding-bottom:.3rem}
+h3{font-size:1.15rem}h4{font-size:1rem}
+a{color:var(--link)}
+p,li{margin:.5rem 0}
+code{background:var(--code-bg);padding:.12em .38em;border-radius:4px;
+font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em}
+pre{background:var(--code-bg);padding:1rem;border-radius:8px;overflow-x:auto;
+border:1px solid var(--rule)}
+pre code{background:none;padding:0;font-size:.86rem;line-height:1.5}
+table{border-collapse:collapse;width:100%;margin:1rem 0;display:block;overflow-x:auto}
+th,td{border:1px solid var(--rule);padding:.45rem .7rem;text-align:left;
+vertical-align:top;font-size:.92rem}
+th{background:var(--code-bg);font-weight:600}
+blockquote{margin:1rem 0;padding:.6rem 1rem;border-left:4px solid var(--link);
+background:var(--note-bg);border-radius:0 6px 6px 0}
+blockquote p{margin:.3rem 0}
+hr{border:0;border-top:1px solid var(--rule);margin:2.5rem 0}
+footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--rule);
+color:var(--muted);font-size:.82rem}
+.idx{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.6rem;
+margin:1.5rem 0}
+.idx a{display:block;padding:.7rem .9rem;border:1px solid var(--rule);border-radius:8px;
+text-decoration:none;background:var(--code-bg)}
+.idx a:hover{border-color:var(--link)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="lang"><a href="../index.html">astrovodka documentation</a><a href="../zh/index.html">简体中文</a></nav>
+<h1 id="installation-and-environment-setup">Installation and environment setup</h1>
+<p>This page covers everything needed to get astrovodka running: supported Python versions, the three supported installation routes, the optional dependencies and what each one unlocks, how to work offline on a cluster, how to lay out your IllustrisTNG data, and how to check that the install is sound.</p>
+<p>If you just want the shortest path, it is:</p>
+<pre><code class="language-bash">git clone https://github.com/LRayleighJ/astrovodka.git
+cd astrovodka
+conda env create -f environment.yml
+conda activate astrovodka</code></pre>
+<p>and then jump to <a href="#verifying-the-installation">Verifying the installation</a>.</p>
+<ul>
+<li><a href="#requirements">Requirements</a></li>
+<li><a href="#installation">Installation</a>
+<ul>
+<li><a href="#route-1-conda-recommended">Route 1: conda (recommended)</a></li>
+<li><a href="#route-2-virtualenv-and-pip">Route 2: virtualenv and pip</a></li>
+<li><a href="#route-3-core-only-no-optional-dependencies">Route 3: core only, no optional dependencies</a></li>
+</ul>
+</li>
+<li><a href="#optional-dependencies">Optional dependencies</a></li>
+<li><a href="#offline-and-air-gapped-installs">Offline and air-gapped installs</a></li>
+<li><a href="#illustristng-data">IllustrisTNG data</a></li>
+<li><a href="#verifying-the-installation">Verifying the installation</a></li>
+<li><a href="#troubleshooting">Troubleshooting</a></li>
+<li><a href="#python-version-support">Python version support</a></li>
+</ul>
+<hr>
+<h2 id="requirements">Requirements</h2>
+<h3 id="software">Software</h3>
+<table>
+<thead>
+<tr>
+<th>Requirement</th>
+<th>Minimum</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python</td>
+<td>3.9</td>
+<td>See <a href="#python-version-support">Python version support</a></td>
+</tr>
+<tr>
+<td>pip</td>
+<td>21.3</td>
+<td>Needed for <code>pyproject.toml</code>-only projects</td>
+</tr>
+<tr>
+<td>numpy</td>
+<td>1.20</td>
+<td>Core dependency</td>
+</tr>
+<tr>
+<td>scipy</td>
+<td>1.6</td>
+<td>FFT convolution, interpolation, special functions</td>
+</tr>
+<tr>
+<td>astropy</td>
+<td>5.0</td>
+<td>Cosmology, units, coordinates, WCS, FITS I/O</td>
+</tr>
+<tr>
+<td>tqdm</td>
+<td>4.40</td>
+<td>Progress bars</td>
+</tr>
+<tr>
+<td>h5py</td>
+<td>3.0</td>
+<td><em>Optional but required for TNG data</em> — see below</td>
+</tr>
+<tr>
+<td>matplotlib</td>
+<td>3.4</td>
+<td>Optional: figures and tutorials</td>
+</tr>
+<tr>
+<td>multiprocess</td>
+<td>0.70</td>
+<td>Optional: <code>ncpu &gt; 1</code> source insertion</td>
+</tr>
+</tbody>
+</table>
+<p><code>numpy</code>, <code>scipy</code>, <code>astropy</code> and <code>tqdm</code> are installed automatically with the package. The rest are opt-in extras, except that <strong>you need <code>h5py</code> for any TNG workflow</strong> — it is what reads the snapshot files, not just what writes HDF5 output.</p>
+<p>Note that astrovodka uses <strong><code>multiprocess</code></strong>, not the standard library <code>multiprocessing</code>. MARTINI parallelises with <code>dill</code>-based serialisation, which the stdlib module does not provide. Installing <code>multiprocess</code> is only necessary if you pass <code>ncpu &gt; 1</code>.</p>
+<h3 id="hardware">Hardware</h3>
+<p>The package itself is light, but two features are memory-hungry:</p>
+<ul>
+<li><strong>Loading a TNG subhalo.</strong> Cost scales with the subhalo's particle count. The tutorial's target, TNG-100 snapshot 99 subhalo 113, has 8,169 gas cells and loads in seconds. Cluster cores are a different matter: subhalo 0 of the same snapshot has roughly 38 million gas cells and needs well over 10 GB. Avoid low subhalo IDs, which are the most massive objects (the catalog is sorted by descending mass).</li>
+<li><strong>The 3D data products and the adaptive FFT UV field</strong> build a full <code>ngrid³</code> grid (128³ by default), which is on the order of 10 MB per grid per array. Subhalos with more than ~10⁷ gas cells would benefit from chunking, which is not implemented.</li>
+</ul>
+<p>Disk space for the software itself is negligible (a few MB). Disk space for TNG data is not — see <a href="#illustristng-data">IllustrisTNG data</a>.</p>
+<hr>
+<h2 id="installation">Installation</h2>
+<p>astrovodka is not on PyPI. Install it from a checkout. All three routes below start from:</p>
+<pre><code class="language-bash">git clone https://github.com/LRayleighJ/astrovodka.git
+cd astrovodka</code></pre>
+<h3 id="route-1-conda-recommended">Route 1: conda (recommended)</h3>
+<p><code>environment.yml</code> in the repository root pins the stack that the project is developed and verified against, and installs astrovodka itself in editable mode:</p>
+<pre><code class="language-bash">conda env create -f environment.yml
+conda activate astrovodka</code></pre>
+<p>To use a different environment name, edit the <code>name:</code> line first, or override it on the command line:</p>
+<pre><code class="language-bash">conda env create -f environment.yml -n my-env</code></pre>
+<p>To update an existing environment after pulling new commits:</p>
+<pre><code class="language-bash">conda activate astrovodka
+conda env update -f environment.yml --prune</code></pre>
+<h3 id="route-2-virtualenv-and-pip">Route 2: virtualenv and pip</h3>
+<p>Any Python 3.9+ environment works:</p>
+<pre><code class="language-bash">python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+python -m pip install --upgrade pip
+python -m pip install -e &quot;.[dev]&quot;</code></pre>
+<p><code>[dev]</code> pulls in h5py, matplotlib, multiprocess, pytest and pytest-cov. For a leaner install, name only the extras you need:</p>
+<pre><code class="language-bash">python -m pip install -e &quot;.[hdf5]&quot;                 # TNG work, nothing else
+python -m pip install -e &quot;.[hdf5,parallel]&quot;        # + multi-core insertion
+python -m pip install -e &quot;.[hdf5,parallel,plotting]&quot;   # + figures</code></pre>
+<p>If you prefer a plain requirements file over extras:</p>
+<pre><code class="language-bash">python -m pip install -r requirements-dev.txt
+python -m pip install -e . --no-deps</code></pre>
+<p>Editable (<code>-e</code>) is recommended while the code is moving. For a fixed installation use <code>pip install .</code> instead, but note that the examples and tutorials assume the repository is present.</p>
+<h3 id="route-3-core-only-no-optional-dependencies">Route 3: core only, no optional dependencies</h3>
+<p>The physics layer — <code>astrovodka.himodel</code>, which computes per-cell HI and H2 masses from a TNG gas cell array — depends only on numpy, scipy and astropy. It can be used on its own, with no h5py, no matplotlib, and no data cube anywhere in sight:</p>
+<pre><code class="language-bash">python -m pip install -e .</code></pre>
+<pre><code class="language-python">from astrovodka.himodel import HIModelConfig, compute_hi_mass
+
+cfg = HIModelConfig(h=0.6774, z=0.0, boxsize_ckpc_per_h=75000.0, ngrid=64)
+result = compute_hi_mass(gas, model=&quot;K13_vol&quot;, cfg=cfg)
+print(result.m_hi_msun, result.m_h2_msun)</code></pre>
+<p>The package is laid out so that this works: <code>astrovodka.himodel</code> imports nothing from the observation layer, and <code>import astrovodka</code> does not import h5py or matplotlib. A test enforces both (<code>tests/test_selfcontained.py</code>).</p>
+<hr>
+<h2 id="optional-dependencies">Optional dependencies</h2>
+<table>
+<thead>
+<tr>
+<th>Extra</th>
+<th>Package</th>
+<th>What it unlocks</th>
+<th>Needed for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>hdf5</code></td>
+<td>h5py</td>
+<td>Reading TNG snapshot and group catalogs; <code>write_hdf5</code>, <code>save_state</code>, <code>SubhaloDataProducts.save_hdf5</code></td>
+<td><strong>Any TNG workflow</strong></td>
+</tr>
+<tr>
+<td><code>parallel</code></td>
+<td>multiprocess</td>
+<td><code>insert_source_in_cube(ncpu=N)</code>, multi-core spectrum initialisation</td>
+<td>Large cubes</td>
+</tr>
+<tr>
+<td><code>plotting</code></td>
+<td>matplotlib</td>
+<td><code>Martini.preview()</code>, <code>GlobalProfile.plot_spectrum()</code>, the tutorial figures</td>
+<td>Figures</td>
+</tr>
+<tr>
+<td><code>testing</code></td>
+<td>pytest, pytest-cov</td>
+<td>The test suite</td>
+<td>Development</td>
+</tr>
+<tr>
+<td><code>all</code></td>
+<td>all three runtime extras</td>
+<td>—</td>
+<td>Convenience</td>
+</tr>
+<tr>
+<td><code>dev</code></td>
+<td>all of the above + testing</td>
+<td>—</td>
+<td>Development</td>
+</tr>
+</tbody>
+</table>
+<p><code>h5py</code> is listed as optional because the physics layer genuinely does not need it. In practice, though, every route that touches actual TNG data requires it, so treat it as mandatory unless you are only using <code>astrovodka.himodel</code>.</p>
+<hr>
+<h2 id="offline-and-air-gapped-installs">Offline and air-gapped installs</h2>
+<p>Cluster login nodes often have no outbound network. Two things need attention.</p>
+<p><strong>1. Build isolation.</strong> By default pip creates a temporary virtual environment to build the package and downloads <code>setuptools</code> into it. If you already have a recent setuptools, skip that:</p>
+<pre><code class="language-bash">python -m pip install -e . --no-build-isolation</code></pre>
+<p><code>pyproject.toml</code> requires <code>setuptools&gt;=64</code>; check yours with <code>python -c "import setuptools; print(setuptools.__version__)"</code>.</p>
+<p><strong>2. Dependencies.</strong> Either pre-download wheels on a networked machine,</p>
+<pre><code class="language-bash"># on a networked machine, matching the target Python
+pip download astrovodka[hdf5,parallel,plotting] -d wheels/ --no-deps
+pip download numpy scipy astropy tqdm h5py matplotlib multiprocess pytest -d wheels/</code></pre>
+<p>then copy <code>wheels/</code> across and install from it:</p>
+<pre><code class="language-bash">python -m pip install --no-index --find-links wheels/ -e . --no-build-isolation</code></pre>
+<p>or build a conda environment file on a networked machine and transfer it (<code>conda env export &gt; environment.lock.yml</code>, then <code>conda env create -f environment.lock.yml</code>).</p>
+<p><strong>3. Conda offline.</strong> <code>conda env create --offline</code> works if the packages are already in the local package cache. If your cluster provides TNG data but not a scientific Python stack, <code>conda create -n astrovodka --clone base</code> followed by <code>pip install -e . --no-deps</code> is often the fastest way in, provided numpy, scipy and astropy are already present.</p>
+<hr>
+<h2 id="illustristng-data">IllustrisTNG data</h2>
+<p>astrovodka reads TNG data <strong>from local disk</strong>. It does not use the TNG web API and does not need network access at run time, but it does need the files.</p>
+<h3 id="where-to-get-it">Where to get it</h3>
+<ul>
+<li><strong>TNG-100 / TNG-300 public data release:</strong> &lt;https://www.tng-project.org/data/&gt; (registration required). Download the <code>groups_&lt;snap&gt;</code> and <code>snapdir_&lt;snap&gt;</code> directories for the snapshots you want.</li>
+<li><strong>TNG-50:</strong> same site, smaller volumes, good for testing.</li>
+<li>If you only want the group catalogs (subhalo positions and masses) and not the particle data, <code>groups_&lt;snap&gt;</code> alone is enough to <em>choose</em> subhalos, but not to build cubes.</li>
+</ul>
+<h3 id="expected-layout">Expected layout</h3>
+<p>Point <code>basePath</code> at the simulation directory, i.e. the one that <em>contains</em> <code>groups_&lt;snap&gt;</code> and <code>snapdir_&lt;snap&gt;</code>:</p>
+<pre><code>/path/to/TNG/TNG-100/
+├── groups_099/
+│   ├── fof_subhalo_tab_099.0.hdf5      # group/subhalo catalog
+│   └── ...
+└── snapdir_099/
+    ├── snap_099.0.hdf5                 # particle data, chunked
+    └── ...</code></pre>
+<p>The snapshot number is zero-padded to three digits. Directory names must match this pattern; <code>TNGSource</code> builds the paths from <code>basePath</code> and <code>snapNum</code>.</p>
+<h3 id="size">Size</h3>
+<p>For TNG-100, one snapshot's particle data is on the order of <strong>1–2 TB</strong> and the group catalog around <strong>13 GB</strong>. You do not need every snapshot — for most work one or two is enough. Consider a symlink farm if the data lives on a scratch filesystem with a purge policy.</p>
+<h3 id="telling-astrovodka-where-the-data-is">Telling astrovodka where the data is</h3>
+<p>There is no global configuration file. Pass the path explicitly:</p>
+<pre><code class="language-python">source = TNGSource(basePath=&quot;/path/to/TNG/TNG-100/&quot;, snapNum=99, subID=113)</code></pre>
+<p>The example scripts and both tutorial notebooks read it from an environment variable instead, so that no path is baked into the repository:</p>
+<pre><code class="language-bash">export TNG_BASE_PATH=/path/to/TNG/TNG-100/
+python examples/en/astrovodka_demo.py --snapNum 99 --subID 113</code></pre>
+<hr>
+<h2 id="verifying-the-installation">Verifying the installation</h2>
+<h3 id="1-it-imports">1. It imports</h3>
+<pre><code class="language-bash">python -c &quot;import astrovodka; print(astrovodka.__version__)&quot;
+python -c &quot;from astrovodka.himodel import METHODS; print(METHODS)&quot;</code></pre>
+<p>The second should print <code>('GD14_vol', 'GD14_map', 'K13_vol', 'K13_map')</code>.</p>
+<h3 id="2-the-optional-pieces-are-there">2. The optional pieces are there</h3>
+<pre><code class="language-bash">python -c &quot;import h5py, matplotlib, multiprocess; print(&#x27;optional deps OK&#x27;)&quot;</code></pre>
+<p>A missing <code>h5py</code> will not stop <code>import astrovodka</code> — by design — but it will fail the moment you load a TNG subhalo.</p>
+<h3 id="3-the-test-suite-passes">3. The test suite passes</h3>
+<pre><code class="language-bash">python -m pytest tests/ -q</code></pre>
+<p>The suite is synthetic: <strong>it needs no TNG data, no network, and no GPU</strong>, and takes about 15 seconds. It covers the four HI models against analytic expectations, the cosmology helpers, the data-cube spectral-axis conversions, the 3D data products, and the self-containment rules described above.</p>
+<h3 id="4-the-examples-run">4. The examples run</h3>
+<p>Without any TNG data:</p>
+<pre><code class="language-bash">python examples/en/astrovodka_demo.py</code></pre>
+<p>This builds an analytic rotating disc at z = 0.01 and writes a FITS cube to <code>examples/outputs/</code>. It prints a mass-conservation check; the line</p>
+<pre><code>Mass in cube (assuming distance ... ): 1.00e+11 solMass
+    [100% of initial source mass]</code></pre>
+<p>should read 100%.</p>
+<p>With TNG data:</p>
+<pre><code class="language-bash">export TNG_BASE_PATH=/path/to/TNG/TNG-100/
+python examples/en/astrovodka_demo.py --snapNum 99 --subID 113 --hiModel K13_vol</code></pre>
+<hr>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Cause</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ModuleNotFoundError: No module named 'astrovodka'</code></td>
+<td>Not installed, or installed into a different interpreter</td>
+<td><code>python -m pip install -e .</code> using the <em>same</em> <code>python</code> you run the script with</td>
+</tr>
+<tr>
+<td><code>ModuleNotFoundError: No module named 'h5py'</code> when constructing <code>TNGSource</code></td>
+<td>h5py is an optional extra</td>
+<td><code>pip install -e ".[hdf5]"</code></td>
+</tr>
+<tr>
+<td><code>ModuleNotFoundError: No module named 'six'</code></td>
+<td>Older revisions of the vendored TNG I/O used <code>six</code></td>
+<td>Updated in 1.0.0; update your checkout</td>
+</tr>
+<tr>
+<td><code>ModuleNotFoundError: No module named 'typing_extensions'</code> on Python 3.9/3.10</td>
+<td><code>typing.Self</code> is only in the 3.11 stdlib</td>
+<td><code>pip install typing_extensions</code>, or reinstall the package so the conditional dependency is resolved</td>
+</tr>
+<tr>
+<td><code>ModuleNotFoundError: No module named 'multiprocess'</code> when using <code>ncpu &gt; 1</code></td>
+<td>Stdlib <code>multiprocessing</code> is not a substitute</td>
+<td><code>pip install -e ".[parallel]"</code></td>
+</tr>
+<tr>
+<td><code>ImportError: numpy.core.multiarray failed to import</code></td>
+<td>numpy/scipy built against mismatched ABIs</td>
+<td><code>pip install --force-reinstall numpy scipy</code> in a fresh environment</td>
+</tr>
+<tr>
+<td><code>ValueError: datacube padding insufficient for beam convolution</code></td>
+<td><code>write_fits</code> calls <code>drop_pad()</code>, so writing mid-pipeline removes the padding</td>
+<td><code>M.datacube.add_pad(M.beam.needs_pad())</code> before the next <code>convolve_beam()</code></td>
+</tr>
+<tr>
+<td><code>FileNotFoundError: .../snapdir_099/...</code></td>
+<td><code>basePath</code> points at <code>snapdir_099/</code> itself, or at the parent of <code>TNG-100/</code></td>
+<td><code>basePath</code> must be the directory <em>containing</em> <code>groups_&lt;snap&gt;</code> and <code>snapdir_&lt;snap&gt;</code></td>
+</tr>
+<tr>
+<td>Loading a subhalo takes minutes and hundreds of GB</td>
+<td>You are loading a cluster core</td>
+<td>Use a subhalo ID in the 100s or higher; see <a href="#hardware">Hardware</a></td>
+</tr>
+<tr>
+<td><code>RuntimeError: unknown hi_model</code></td>
+<td>A typo, or a name from an older revision</td>
+<td>One of <code>K13_vol</code>, <code>K13_map</code>, <code>GD14_vol</code>, <code>GD14_map</code></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="python-version-support">Python version support</h2>
+<p><strong>Python 3.9 is the floor and the version this release is tested on</strong>, together with 3.10 through 3.13 in CI. <code>pyproject.toml</code> declares <code>requires-python = "&gt;=3.9"</code>.</p>
+<p>Two details are worth knowing:</p>
+<ul>
+<li><code>astrovodka/datacube.py</code> uses <code>typing.Self</code>, which only reaches the standard library in Python 3.11. On 3.9 and 3.10 that falls back to <code>typing_extensions</code>, which is declared as a conditional dependency, so it is installed automatically on those versions.</li>
+<li><code>types.EllipsisType</code> (3.10+) is imported defensively, with a <code>type(Ellipsis)</code> fallback, so the annotation works on 3.9.</li>
+</ul>
+<p>Because astropy 7 requires Python 3.11 and later, on Python 3.9 pip will resolve an older astropy (6.x), which is supported. The declared floor for astropy is 5.0.</p>
+<p>The vendored MARTINI observation machinery is not restyled here, but it is 3.9-clean and CI runs the whole suite on every supported version.</p>
+<footer>astrovodka &mdash; mock resolved HI observations of IllustrisTNG galaxies.
+Generated from the Markdown sources by <code>docs/build_html.py</code>.</footer>
+</div>
+</body>
+</html>

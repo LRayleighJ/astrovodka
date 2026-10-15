@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>astrovodka.sources.sph_source — SPHSource</title>
+<style>
+:root{--fg:#1c1e21;--muted:#5c6570;--link:#0b62c4;--rule:#d8dee6;--bg:#fff;
+--code-bg:#f4f6f8;--note-bg:#eef4fb;--head:#12395e}
+@media (prefers-color-scheme:dark){:root{--fg:#e6e8eb;--muted:#9aa5b1;--link:#69a8f5;
+--rule:#39404a;--bg:#15181c;--code-bg:#1e2227;--note-bg:#1b2733;--head:#9cc6f0}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);line-height:1.65;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",
+"Noto Sans CJK SC","Noto Sans CJK JP","PingFang SC","Microsoft YaHei",sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:2rem 1.25rem 4rem}
+nav.lang{font-size:.85rem;color:var(--muted);margin-bottom:2rem;
+display:flex;gap:1rem;flex-wrap:wrap;align-items:center}
+nav.lang a{color:var(--link);text-decoration:none}
+nav.lang a:hover{text-decoration:underline}
+h1,h2,h3,h4,h5,h6{color:var(--head);line-height:1.3;margin:2rem 0 .75rem}
+h1{font-size:1.9rem;border-bottom:2px solid var(--rule);padding-bottom:.4rem}
+h2{font-size:1.45rem;border-bottom:1px solid var(--rule);padding-bottom:.3rem}
+h3{font-size:1.15rem}h4{font-size:1rem}
+a{color:var(--link)}
+p,li{margin:.5rem 0}
+code{background:var(--code-bg);padding:.12em .38em;border-radius:4px;
+font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em}
+pre{background:var(--code-bg);padding:1rem;border-radius:8px;overflow-x:auto;
+border:1px solid var(--rule)}
+pre code{background:none;padding:0;font-size:.86rem;line-height:1.5}
+table{border-collapse:collapse;width:100%;margin:1rem 0;display:block;overflow-x:auto}
+th,td{border:1px solid var(--rule);padding:.45rem .7rem;text-align:left;
+vertical-align:top;font-size:.92rem}
+th{background:var(--code-bg);font-weight:600}
+blockquote{margin:1rem 0;padding:.6rem 1rem;border-left:4px solid var(--link);
+background:var(--note-bg);border-radius:0 6px 6px 0}
+blockquote p{margin:.3rem 0}
+hr{border:0;border-top:1px solid var(--rule);margin:2.5rem 0}
+footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--rule);
+color:var(--muted);font-size:.82rem}
+.idx{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.6rem;
+margin:1.5rem 0}
+.idx a{display:block;padding:.7rem .9rem;border:1px solid var(--rule);border-radius:8px;
+text-decoration:none;background:var(--code-bg)}
+.idx a:hover{border-color:var(--link)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="lang"><a href="../../index.html">astrovodka documentation</a><a href="../../en/index.html">English</a></nav>
+<h1 id="astrovodkasourcessph_source--sphsource">astrovodka.sources.sph_source — SPHSource</h1>
+<p>从 SPH 粒子数组抽象出发射 HI 的天体。同时支持旧版距离模式和新的宇宙学红移模式。</p>
+<h2 id="sphsource">SPHSource</h2>
+<h3 id="__init__self--distancenone-redshiftnone-cosmologynone-vpeculiar0-kms-rotationnone-l_coordsnone-ra0-deg-dec0-deg-h07-t_gnone-mhi_gnone-xyz_gnone-vxyz_gnone-hsm_gnone-coordinate_axisnone-coordinate_frameicrs"><code>__init__(self, *, distance=None, redshift=None, cosmology=None, vpeculiar=0 km/s, rotation=None, L_coords=None, ra=0 deg, dec=0 deg, h=0.7, T_g=None, mHI_g=None, xyz_g=None, vxyz_g=None, hsm_g=None, coordinate_axis=None, coordinate_frame=ICRS())</code></h3>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>distance</code></td>
+<td>`Quantity[Mpc] \</td>
+<td>None`</td>
+<td>旧版模式：物理距离（与 <code>h</code> 配合使用）</td>
+</tr>
+<tr>
+<td><code>redshift</code></td>
+<td>`float \</td>
+<td>None`</td>
+<td>宇宙学红移模式（与 <code>cosmology</code> 配合使用）</td>
+</tr>
+<tr>
+<td><code>cosmology</code></td>
+<td>`Cosmology \</td>
+<td>None`</td>
+<td>Astropy 宇宙学（默认：Planck15）</td>
+</tr>
+<tr>
+<td><code>vpeculiar</code></td>
+<td><code>Quantity[km/s]</code></td>
+<td>本动速度（默认：0）</td>
+</tr>
+<tr>
+<td><code>rotation</code></td>
+<td>`Rotation \</td>
+<td>None`</td>
+<td>scipy 的 Rotation</td>
+</tr>
+<tr>
+<td><code>L_coords</code></td>
+<td>`L_coords \</td>
+<td>None`</td>
+<td>角动量对齐</td>
+</tr>
+<tr>
+<td><code>ra</code> / <code>dec</code></td>
+<td><code>Quantity[deg]</code></td>
+<td>源的中心（默认：0）</td>
+</tr>
+<tr>
+<td><code>h</code></td>
+<td><code>float</code></td>
+<td>哈勃常数（旧版模式，默认：0.7）</td>
+</tr>
+<tr>
+<td><code>T_g</code></td>
+<td>`Quantity[K] \</td>
+<td>None`</td>
+<td>粒子温度</td>
+</tr>
+<tr>
+<td><code>mHI_g</code></td>
+<td><code>Quantity[M_sun]</code></td>
+<td>每个粒子的 HI 质量</td>
+</tr>
+<tr>
+<td><code>xyz_g</code></td>
+<td><code>Quantity[kpc]</code></td>
+<td>位置。形状为 (3,N) 或 (N,3)。x 为视线方向</td>
+</tr>
+<tr>
+<td><code>vxyz_g</code></td>
+<td><code>Quantity[km/s]</code></td>
+<td>速度。必须与 xyz_g 对应</td>
+</tr>
+<tr>
+<td><code>hsm_g</code></td>
+<td>`Quantity[kpc] \</td>
+<td>None`</td>
+<td>SPH 平滑长度（<strong>FWHM</strong>）</td>
+</tr>
+<tr>
+<td><code>coordinate_axis</code></td>
+<td>`int \</td>
+<td>None`</td>
+<td>自动检测</td>
+</tr>
+<tr>
+<td><code>coordinate_frame</code></td>
+<td><code>BaseRADecFrame</code></td>
+<td>坐标系（默认：ICRS）</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>模式：</strong></p>
+<ul>
+<li><strong>红移模式</strong>（新增）：设置 <code>redshift</code>，可选设置 <code>cosmology</code>。粒子按<strong>角直径距离</strong> D&lt;sub&gt;A&lt;/sub&gt; 放置到天球上（因此在任意红移下角尺寸都正确）；流量定标使用 <strong>光度距离</strong> D&lt;sub&gt;L&lt;/sub&gt;；并且 <code>vsys = c·z/(1+z)</code>，即与 WCS 光谱轴一致的 射电约定。</li>
+<li><strong>距离模式</strong>（旧版）：设置 <code>distance</code> 与 <code>h</code>。计算 vsys=h×100×D + vpeculiar。 此时 D&lt;sub&gt;A&lt;/sub&gt; == D&lt;sub&gt;L&lt;/sub&gt; == <code>distance</code>，也就是未作改动的 MARTINI 行为。</li>
+<li>两者不能同时设置（会抛出 ValueError）。</li>
+<li>平滑长度必须是 FWHM（而不是核半径）。</li>
+</ul>
+</blockquote>
+<hr>
+<h2 id="关键属性">关键属性</h2>
+<table>
+<thead>
+<tr>
+<th>属性</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>vsys</code></td>
+<td><code>Quantity[km/s]</code></td>
+<td>系统速度（射电约定）。可用作 <code>DataCube.spectral_centre</code></td>
+</tr>
+<tr>
+<td><code>distance</code></td>
+<td><code>Quantity[Mpc]</code></td>
+<td>光度距离 D&lt;sub&gt;L&lt;/sub&gt;</td>
+</tr>
+<tr>
+<td><code>luminosity_distance</code></td>
+<td><code>Quantity[Mpc]</code></td>
+<td><code>distance</code> 的别名；流量归一实际使用的就是它</td>
+</tr>
+<tr>
+<td><code>angular_diameter_distance</code></td>
+<td><code>Quantity[Mpc]</code></td>
+<td>D&lt;sub&gt;A&lt;/sub&gt;；天球放置实际使用的就是它</td>
+</tr>
+<tr>
+<td><code>vhubble</code></td>
+<td><code>Quantity[km/s]</code></td>
+<td>系统哈勃退行速度（宇宙学模式下为 <code>c·z/(1+z)</code>）</td>
+</tr>
+<tr>
+<td><code>npart</code></td>
+<td><code>int</code></td>
+<td>裁剪后的粒子数</td>
+</tr>
+<tr>
+<td><code>input_mass</code></td>
+<td><code>Quantity[M_sun]</code></td>
+<td>裁剪前的 HI 总质量</td>
+</tr>
+</tbody>
+</table>
+<h2 id="方法">方法</h2>
+<h3 id="rotateself-rotationnone--l_coordsnone"><code>rotate(self, rotation=None, *, L_coords=None)</code></h3>
+<p>施加旋转。返回 <code>Rotation</code>。</p>
+<h3 id="translateself-translation_vector-quantitykpc"><code>translate(self, translation_vector: Quantity[kpc])</code></h3>
+<p>平移位置。</p>
+<h3 id="boostself-boost_vector-quantitykms"><code>boost(self, boost_vector: Quantity[km/s])</code></h3>
+<p>叠加速度偏移。</p>
+<h3 id="previewself-max_points5000-fig1-limnone-vlimnone-point_scalingauto-title-savenone"><code>preview(self, max_points=5000, fig=1, lim=None, vlim=None, point_scaling='auto', title='', save=None)</code></h3>
+<p>三联图：天球投影 + 2 幅 PV 图。返回 <code>Figure</code>。</p>
+<h3 id="save_current_rotationself-fname-str"><code>save_current_rotation(self, fname: str)</code></h3>
+<p>把 3×3 旋转矩阵保存为文本。</p>
+<h3 id="save_current_affine_transformationsself-fname-str"><code>save_current_affine_transformations(self, fname: str)</code></h3>
+<p>把 (2,4,4) 仿射变换保存为 <code>.npy</code>。</p>
+<h3 id="load_affine_transformationsself-fname-str"><code>load_affine_transformations(self, fname: str)</code></h3>
+<p>从 <code>.npy</code> 读入并施加仿射变换。</p>
+<footer>astrovodka &mdash; mock resolved HI observations of IllustrisTNG galaxies.
+Generated from the Markdown sources by <code>docs/build_html.py</code>.</footer>
+</div>
+</body>
+</html>

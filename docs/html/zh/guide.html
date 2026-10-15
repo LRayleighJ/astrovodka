@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>用户指南</title>
+<style>
+:root{--fg:#1c1e21;--muted:#5c6570;--link:#0b62c4;--rule:#d8dee6;--bg:#fff;
+--code-bg:#f4f6f8;--note-bg:#eef4fb;--head:#12395e}
+@media (prefers-color-scheme:dark){:root{--fg:#e6e8eb;--muted:#9aa5b1;--link:#69a8f5;
+--rule:#39404a;--bg:#15181c;--code-bg:#1e2227;--note-bg:#1b2733;--head:#9cc6f0}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);line-height:1.65;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",
+"Noto Sans CJK SC","Noto Sans CJK JP","PingFang SC","Microsoft YaHei",sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:2rem 1.25rem 4rem}
+nav.lang{font-size:.85rem;color:var(--muted);margin-bottom:2rem;
+display:flex;gap:1rem;flex-wrap:wrap;align-items:center}
+nav.lang a{color:var(--link);text-decoration:none}
+nav.lang a:hover{text-decoration:underline}
+h1,h2,h3,h4,h5,h6{color:var(--head);line-height:1.3;margin:2rem 0 .75rem}
+h1{font-size:1.9rem;border-bottom:2px solid var(--rule);padding-bottom:.4rem}
+h2{font-size:1.45rem;border-bottom:1px solid var(--rule);padding-bottom:.3rem}
+h3{font-size:1.15rem}h4{font-size:1rem}
+a{color:var(--link)}
+p,li{margin:.5rem 0}
+code{background:var(--code-bg);padding:.12em .38em;border-radius:4px;
+font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em}
+pre{background:var(--code-bg);padding:1rem;border-radius:8px;overflow-x:auto;
+border:1px solid var(--rule)}
+pre code{background:none;padding:0;font-size:.86rem;line-height:1.5}
+table{border-collapse:collapse;width:100%;margin:1rem 0;display:block;overflow-x:auto}
+th,td{border:1px solid var(--rule);padding:.45rem .7rem;text-align:left;
+vertical-align:top;font-size:.92rem}
+th{background:var(--code-bg);font-weight:600}
+blockquote{margin:1rem 0;padding:.6rem 1rem;border-left:4px solid var(--link);
+background:var(--note-bg);border-radius:0 6px 6px 0}
+blockquote p{margin:.3rem 0}
+hr{border:0;border-top:1px solid var(--rule);margin:2.5rem 0}
+footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--rule);
+color:var(--muted);font-size:.82rem}
+.idx{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.6rem;
+margin:1.5rem 0}
+.idx a{display:block;padding:.7rem .9rem;border:1px solid var(--rule);border-radius:8px;
+text-decoration:none;background:var(--code-bg)}
+.idx a:hover{border-color:var(--link)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="lang"><a href="../index.html">astrovodka documentation</a><a href="../en/index.html">English</a></nav>
+<h1 id="用户指南">用户指南</h1>
+<p>astrovodka 如何工作，以及如何使用它。安装见 <a href="zh/installation.html">installation.md</a>；各类的签名见 <a href="zh/api/index.html">API 参考</a>；HI/H₂ 模型的深入讨论见 <a href="zh/hi-models.html">hi-models.md</a>。</p>
+<ul>
+<li><a href="#流水线">流水线</a></li>
+<li><a href="#源">源</a></li>
+<li><a href="#两种距离">两种距离</a></li>
+<li><a href="#数据立方体">数据立方体</a></li>
+<li><a href="#子模块">子模块</a></li>
+<li><a href="#完整示例">完整示例</a></li>
+<li><a href="#常见任务">常见任务</a></li>
+<li><a href="#陷阱">陷阱</a></li>
+<li><a href="#与-martini-的差异">与 MARTINI 的差异</a></li>
+</ul>
+<hr>
+<h2 id="流水线">流水线</h2>
+<p>astrovodka 是面向对象的：<code>Martini</code> 持有一个<strong>源</strong>、一个<strong>数据立方体</strong>和 三个子模块，并按顺序运行它们。</p>
+<pre><code>    source ────────┐
+    datacube ──────┤
+    beam ──────────┤     ┌──────────────────────┐
+    noise ─────────┼────▶│       Martini        │
+    spectral_model ┤     └──────────────────────┘
+    sph_kernel ────┘        │      │       │
+                            ▼      ▼       ▼
+                   insert_source_in_cube()  →  粒子落到像素上
+                            │
+                      add_noise()           →  （可选）每个像素的噪声
+                            │
+                    convolve_beam()         →  （可选）望远镜波束
+                            │
+                      write_fits()          →  一个能在 DS9 中打开的数据立方体</code></pre>
+<p>每一步都是独立的方法，因此你可以在其中任意一步之后停下来。停在 <code>insert_source_in_cube()</code> 之后得到的是一个无噪声、未卷积的数据立方体 —— 检查物理时你想要的正是这个，因为这时没有噪声与信号竞争， 也没有波束把信号重新分配。</p>
+<h2 id="源">源</h2>
+<p>源抽象出“发出 21 cm 谱线辐射的那个东西”。已实现的有两个。</p>
+<h3 id="sphsource--任意-sph-数据"><code>SPHSource</code> —— 任意 SPH 数据</h3>
+<pre><code class="language-python">SPHSource(
+    redshift=0.01, ra=30*U.deg, dec=45*U.deg,
+    T_g=..., mHI_g=..., xyz_g=..., vxyz_g=..., hsm_g=...,
+)</code></pre>
+<p>粒子数组就是普通的 <code>astropy</code> 量：</p>
+<table>
+<thead>
+<tr>
+<th>数组</th>
+<th>单位</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>xyz_g</code></td>
+<td>kpc</td>
+<td>位置。<strong><code>x</code> 是视线方向</strong>；<code>y</code>-<code>z</code> 是天空平面</td>
+</tr>
+<tr>
+<td><code>vxyz_g</code></td>
+<td>km/s</td>
+<td>速度，采用相同的轴约定</td>
+</tr>
+<tr>
+<td><code>mHI_g</code></td>
+<td>M☉</td>
+<td>每个粒子的 HI 质量</td>
+</tr>
+<tr>
+<td><code>T_g</code></td>
+<td>K</td>
+<td>温度，用于热谱线宽度</td>
+</tr>
+<tr>
+<td><code>hsm_g</code></td>
+<td>kpc</td>
+<td>SPH 平滑长度，<strong>以 FWHM 计</strong>，而不是核半径</td>
+</tr>
+</tbody>
+</table>
+<p>最后一点值得强调。各模拟对“平滑长度”到底是什么并无共识 —— 有的存的是 核降到零处的半径，有的存 FWHM，还有的存别的什么。MARTINI 选择 FWHM 作为自己的约定。如果你传给它的其实是核半径，每个粒子被平滑的区域 都会与预期的大小不同，而且不会有任何报错。</p>
+<h3 id="tngsource--从本地磁盘读取-illustristng"><code>TNGSource</code> —— 从本地磁盘读取 IllustrisTNG</h3>
+<pre><code class="language-python">TNGSource(
+    basePath=&quot;/path/to/TNG/TNG-100/&quot;,
+    snapNum=99, subID=113,
+    hi_model=&quot;K13_vol&quot;,
+    observed_redshift=0.02,
+)</code></pre>
+<p><code>TNGSource</code> 直接从文件系统读取快照，运行选定的 HI/H₂ 模型，并把结果 传给 <code>SPHSource</code>。它额外提供：</p>
+<ul>
+<li><strong><code>hi_model</code></strong> —— 四种模型之一（见 <a href="zh/hi-models.html">hi-models.md</a>）。 在任何磁盘 I/O *之前*就已校验，因此拼写错误会立即失败， 而不会在读入几个 GB 之后才发现。</li>
+<li><strong><code>observed_redshift</code></strong> —— 见<a href="#两种距离">两种距离</a>。</li>
+<li><strong><code>load_subhalo_only</code></strong>（默认 <code>True</code>）—— 只加载该子晕的粒子， 而不是它所在的整个 FOF 群。快得多，通常也正是你想要的。</li>
+<li><strong>以暗物质质心为中心</strong>，而不是星表中的 <code>SubhaloPos</code>。</li>
+</ul>
+<p>构建完成之后，这些属性值得了解：</p>
+<table>
+<thead>
+<tr>
+<th>属性</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>m_HI_total</code></td>
+<td>HI 总质量 [M☉]</td>
+</tr>
+<tr>
+<td><code>m_H2_g</code></td>
+<td>每个粒子的 H₂ 质量</td>
+</tr>
+<tr>
+<td><code>f_mol_g</code>, <code>f_neutral_g</code></td>
+<td>逐单元的比例</td>
+</tr>
+<tr>
+<td><code>u_mw_g</code></td>
+<td>每个粒子的 UV 场，单位为 Draine 单位</td>
+</tr>
+<tr>
+<td><code>hi_diagnostics</code></td>
+<td>模型诊断信息，包括 <code>f_gas_in_map</code></td>
+</tr>
+<tr>
+<td><code>D_L</code>, <code>D_A</code>, <code>vsys</code></td>
+<td>宇宙学距离与系统速度</td>
+</tr>
+<tr>
+<td><code>source_redshift</code></td>
+<td>快照自身的红移</td>
+</tr>
+</tbody>
+</table>
+<h2 id="两种距离">两种距离</h2>
+<p>这是 astrovodka 与 MARTINI 区别最大的地方，弄错的代价很高， 因此值得讲清楚。</p>
+<p><strong><code>D_L</code> 与 <code>D_A</code> 不能互换，二者相差 <code>(1+z)²</code>。</strong></p>
+<table>
+<thead>
+<tr>
+<th>距离</th>
+<th>用于</th>
+<th>弄错的代价</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>D_L</code>，光度距离</td>
+<td>把 HI 质量换算成流量；对数据立方体做归一化</td>
+<td><code>(1+z)⁴</code></td>
+</tr>
+<tr>
+<td><code>D_A</code>，角直径距离</td>
+<td>所有角尺度：像素尺度、源的延展、波束</td>
+<td><code>(1+z)²</code></td>
+</tr>
+</tbody>
+</table>
+<p>astrovodka 用 <code>astropy.cosmology.Planck15</code>（或你传入的宇宙学）计算 这两个距离，并把各自用在该用的地方。</p>
+<h3 id="两个红移">两个红移</h3>
+<p>一个 TNG 快照只有一个红移，而它并不总是你想要观测的那个红移。 <code>z ≈ 0</code> 的快照角直径距离趋近于零，因此其中的星系张开的角几乎可以忽略， 根本无法分辨。</p>
+<p><code>observed_redshift</code> 把这两个角色分开：</p>
+<table>
+<thead>
+<tr>
+<th>量</th>
+<th>来自</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>单位换算、UV 背景、HI/H₂ 模型</td>
+<td><strong>快照的</strong>红移</td>
+<td>那是气体的物理状态</td>
+</tr>
+<tr>
+<td><code>D_L</code>、<code>D_A</code>、<code>vsys</code>、角尺度、流量</td>
+<td><code>observed_redshift</code></td>
+<td>那是观测的几何</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-python">source = TNGSource(basePath=..., snapNum=99, subID=113, observed_redshift=0.05)
+print(source.source_redshift)   # ~0，即快照的红移
+print(source.D_L, source.D_A)   # 按 z = 0.05 计算</code></pre>
+<h3 id="系统速度约定">系统速度约定</h3>
+<p><code>vsys</code> 采用<strong>射电约定</strong>，即 <code>c·z/(1+z)</code>，这正是 WCS 光谱轴所期望的。 这比听上去更要紧：在 z = 0.5 时，另一种做法（<code>H(z)·D_C</code>）大了 74%， 在 z ≈ 0.79 以上会超过 <code>c</code>，并在高红移处给出负频率。</p>
+<h2 id="数据立方体">数据立方体</h2>
+<pre><code class="language-python">DataCube(
+    n_px_x=256, n_px_y=256, n_channels=64,
+    px_size=5*U.arcsec,
+    channel_width=20*U.km/U.s,
+    spectral_centre=source.vsys,
+)</code></pre>
+<p>关于光谱轴有两点值得了解。</p>
+<p><strong>单位默认跟随 <code>channel_width</code>。</strong> 给一个速度宽度就得到速度轴； WCS 会记录其中的换算。传入 <code>spectral_unit="MHz"</code> 可以改为强制使用频率轴。</p>
+<p><strong>宽度按微分方式换算。</strong> 速度宽度换到频率轴时按 <code>Δf = f_rest·Δv/c</code> 换算，而不是把两个端点变换再相减 —— 两者并不相同，用错的那个会 悄无声息地丢掉几乎全部信号（见<a href="#陷阱">陷阱</a>）。</p>
+<p>光谱轴始终要覆盖谱线，而不只是气体。<code>Martini</code> 会裁剪掉谱线轮廓放不进 通道范围的粒子，而轮廓宽 <code>±4σ</code>，因此轴必须比粒子速度范围宽大约 <code>8σ</code>。 对于有恒星形成的子晕，最热的单元达到 σ ≈ 100 km/s，这意味着大约 800 km/s 的余量。弄错这一点会悄无声息地丢掉质量 —— 质量回收那一行会掉到 100% 以下，而不会有别的任何提示。</p>
+<p>无论当初是用哪种单位构建的，都可以按任一单位把这条轴读回来：</p>
+<pre><code class="language-python">datacube.velocity_channel_edges   # km/s
+datacube.frequency_channel_edges  # Hz</code></pre>
+<h2 id="子模块">子模块</h2>
+<table>
+<thead>
+<tr>
+<th>组件</th>
+<th>选项</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>波束</strong></td>
+<td><code>GaussianBeam(bmaj, bmin, bpa, truncate)</code></td>
+<td><code>bmin</code> 默认为 <code>bmaj</code></td>
+</tr>
+<tr>
+<td><strong>噪声</strong></td>
+<td><code>GaussianNoise(rms, seed)</code></td>
+<td>在卷积*之前*加入，因此波束会使其相关</td>
+</tr>
+<tr>
+<td><strong>谱线模型</strong></td>
+<td><code>GaussianSpectrum(sigma=...)</code>、<code>DiracDeltaSpectrum()</code></td>
+<td><code>sigma="thermal"</code> 表示逐粒子使用 <code>sqrt(k_B T / m_p)</code></td>
+</tr>
+<tr>
+<td><strong>SPH 平滑核</strong></td>
+<td><code>CubicSplineKernel</code>、<code>WendlandC2Kernel</code>、<code>WendlandC6Kernel</code>、<code>QuarticSplineKernel</code>、<code>GaussianKernel</code>、<code>DiracDeltaKernel</code></td>
+<td>选与你的模拟所用核相匹配的那一个</td>
+</tr>
+</tbody>
+</table>
+<p>SPH 平滑核是<strong>自适应的</strong>：当像素与平滑长度之比使主要近似不再准确时， 每个核都会依次回退到 <code>DiracDeltaKernel</code>，再回退到 <code>GaussianKernel(truncate=6)</code>，并且会说明这一点。当该比值处于临界时， 校验会给出警告；在 <code>insert_source_in_cube()</code> 上设置 <code>skip_validation=True</code> 可以把它关掉。</p>
+<h2 id="完整示例">完整示例</h2>
+<pre><code class="language-python">import astropy.units as U
+from astrovodka import Martini, DataCube, SubhaloDataProducts
+from astrovodka.sources import TNGSource
+from astrovodka.beams import GaussianBeam
+from astrovodka.spectral_models import GaussianSpectrum
+from astrovodka.sph_kernels import CubicSplineKernel
+
+basePath, snapNum, subID = &quot;/path/to/TNG/TNG-100/&quot;, 99, 113
+
+# --- 三维数据产品：UV 场，以及实空间和红移空间中的 DM/HI/H2 密度
+dp = SubhaloDataProducts.from_subhalo(
+    basePath=basePath, snapNum=snapNum, subID=subID,
+    ngrid=64, hi_model=&quot;K13_vol&quot;,
+)
+dp.save_hdf5(f&quot;sub{subID}_products.hdf5&quot;)
+
+# --- 源
+source = TNGSource(
+    basePath=basePath, snapNum=snapNum, subID=subID,
+    hi_model=&quot;K13_vol&quot;, observed_redshift=0.05, load_subhalo_only=True,
+)
+
+# --- 数据立方体。光谱轴沿用 channel_width 的单位（此处为 km/s）。
+datacube = DataCube(
+    n_px_x=128, n_px_y=128, n_channels=64,
+    px_size=5 * U.arcsec,
+    channel_width=20 * U.km / U.s,
+    spectral_centre=source.vsys,
+)
+
+# --- 运行
+M = Martini(source=source, datacube=datacube,
+            beam=GaussianBeam(bmaj=15 * U.arcsec),
+            spectral_model=GaussianSpectrum(sigma=&quot;thermal&quot;),
+            sph_kernel=CubicSplineKernel())
+M.insert_source_in_cube(progressbar=False)
+M.convolve_beam()
+M.write_fits(f&quot;sub{subID}_cube.fits&quot;)
+
+# --- 按任一单位读回这条轴
+print(f&quot;channel 0: {datacube.frequency_channel_edges[0].to(U.MHz):.4f} MHz&quot;)
+print(f&quot;channel 0: {datacube.velocity_channel_edges[0].to(U.km/U.s):.1f} km/s&quot;)</code></pre>
+<p><code>insert_source_in_cube()</code> 会打印放进立方体的质量占源总量的比例。 <strong>要读那一行。</strong> 它应该显示 100%。</p>
+<h2 id="常见任务">常见任务</h2>
+<h3 id="改变角分辨率">改变角分辨率</h3>
+<p>用不同的波束和像素尺寸重建数据立方体。干涉阵能分辨结构， 但会漏掉延展辐射；单口径天线则相反。</p>
+<pre><code class="language-python">datacube = DataCube(..., px_size=beam_fwhm / 3, ...)   # 每个波束约 3 个像素</code></pre>
+<h3 id="把星系放到多个红移">把星系放到多个红移</h3>
+<pre><code class="language-python">for z in (0.0, 0.02, 0.05, 0.1):
+    source = TNGSource(basePath=..., snapNum=99, subID=113, observed_redshift=z)
+    ...</code></pre>
+<p>每次都新建一个 <code>TNGSource</code>。构建数据立方体<strong>会就地裁剪源</strong>， 因此一个源对象只适用于一次观测 —— 见<a href="#陷阱">陷阱</a>。</p>
+<h3 id="批量处理子晕">批量处理子晕</h3>
+<p>见 <code>examples/en/batch_subhalos.py</code>。简而言之：读取 FOF 群表， 按气体单元数过滤，然后循环。</p>
+<pre><code class="language-python">import h5py
+with h5py.File(basePath + &quot;groups_099/fof_subhalo_tab_099.0.hdf5&quot;, &quot;r&quot;) as f:
+    n_gas = f[&quot;SubhaloLenType&quot;][:, 0]
+ids = [i for i, n in enumerate(n_gas) if 64 &lt;= n &lt;= 5000]</code></pre>
+<p><strong>不要</strong>取星表的前 N 个 —— 它按质量降序排列，因此最前面的条目 是星系团核心。要先过滤。</p>
+<h3 id="匹配已有的观测">匹配已有的观测</h3>
+<pre><code class="language-python">datacube = DataCube.from_wcs(fits.getheader(&quot;observation.fits&quot;)[0])</code></pre>
+<p>这样数据立方体就继承了真实的像素网格、通道宽度和光谱参考系。</p>
+<h3 id="用一条谱代替数据立方体">用一条谱代替数据立方体</h3>
+<p><code>GlobalProfile</code> 完全跳过数据立方体 —— 不需要波束、不需要噪声、 不需要 SPH 平滑核：</p>
+<pre><code class="language-python">from astrovodka import GlobalProfile
+gp = GlobalProfile(source=source, spectral_model=GaussianSpectrum(sigma=7*U.km/U.s),
+                   n_channels=64, channel_width=10*U.km/U.s,
+                   spectral_centre=source.vsys)
+gp.plot_spectrum()</code></pre>
+<h2 id="陷阱">陷阱</h2>
+<p>这四个都耗费过实实在在的调试时间。它们全都继承自 MARTINI。</p>
+<h3 id="1-martini-会就地裁剪源">1. <code>Martini</code> 会就地裁剪源</h3>
+<p><code>Martini.__init__</code> 调用 <code>_prune_particles</code>，后者通过 <code>source.apply_mask</code> 把落在立方体之外的粒子从<strong>源对象本身</strong>移除 —— 而不只是从那一次观测中 移除。先建一个小的临时立方体检查点什么，再用同一个源建一个大的科学 立方体，第二个拿到的就是一个被悄悄截断的源。唯一的症状是质量回收 那一行掉到 100% 以下。</p>
+<p><strong>一个源，一次观测。</strong> 每个数据立方体都重建源。（裁剪并不会连同 <code>mHI_g</code> 一起把 <code>m_H2_g</code> 也掩掉，因此被裁剪过的源在内部也是不一致的。）</p>
+<h3 id="2-write_fits-和-write_hdf5-会丢弃填充区">2. <code>write_fits</code> 和 <code>write_hdf5</code> 会丢弃填充区</h3>
+<p>两者都会调用 <code>datacube.drop_pad()</code>，因为填充区是为卷积而存在的。 在流水线中途写出一个中间产物，下一次 <code>convolve_beam()</code> 就会抛出 <code>ValueError: datacube padding insufficient for beam convolution</code>。把它加回来：</p>
+<pre><code class="language-python">M.datacube.add_pad(M.beam.needs_pad())</code></pre>
+<h3 id="3-谱线模型不能在形状不同的数据立方体之间共享">3. 谱线模型不能在形状不同的数据立方体之间共享</h3>
+<p><code>GaussianSpectrum</code> 会缓存自己的 <code>spectra</code> 数组，而 <code>Martini</code> 只在该数组 为 <code>None</code> 时才重新初始化。同一个实例先用在一个 32 通道的数据立方体上， 再用在一个 42 通道的上面，就会抛出 <code>cannot reshape array of size ...</code>。</p>
+<p><strong>每个 <code>Martini</code> 都新建一个谱线模型。</strong>（如果你已经踩上了， <code>M.init_spectra()</code> 是应急出口。）</p>
+<h3 id="4-光谱轴必须覆盖谱线而不只是气体">4. 光谱轴必须覆盖谱线，而不只是气体</h3>
+<p>见<a href="#数据立方体">数据立方体</a>一节：在粒子速度范围之外留出大约 <code>8σ</code>， 对有恒星形成的子晕大约就是 800 km/s。</p>
+<h2 id="与-martini-的差异">与 MARTINI 的差异</h2>
+<p>观测流水线是 MARTINI 的，是摘取融合并内嵌在仓库里的，而不是通过导入依赖的 获得。不同之处：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>MARTINI</th>
+<th>astrovodka</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>距离</strong></td>
+<td>线性哈勃定律 <code>v = H₀D</code></td>
+<td><code>Planck15</code>：流量用 <code>D_L</code>，角尺度用 <code>D_A</code></td>
+</tr>
+<tr>
+<td><strong>系统速度</strong></td>
+<td><code>h·100·D</code></td>
+<td>射电约定 <code>c·z/(1+z)</code></td>
+</tr>
+<tr>
+<td><strong>HI 质量</strong></td>
+<td>基于压强（Leroy+2008）</td>
+<td>四种可选的 Diemer+2018 模型</td>
+</tr>
+<tr>
+<td><strong>H₂ 质量</strong></td>
+<td>未暴露</td>
+<td><code>source.m_H2_g</code>，逐粒子</td>
+</tr>
+<tr>
+<td><strong>UV 场</strong></td>
+<td>—</td>
+<td>逐星系自适应 FFT 场，下限取 UV 背景</td>
+</tr>
+<tr>
+<td><strong>红移覆盖</strong></td>
+<td>—</td>
+<td><code>observed_redshift</code>，把物理与几何解耦</td>
+</tr>
+<tr>
+<td><strong>TNG 访问</strong></td>
+<td>Web API + JupyterLab</td>
+<td>本地磁盘</td>
+</tr>
+<tr>
+<td><strong>子晕加载</strong></td>
+<td>完整 FOF 群</td>
+<td>仅子晕（默认）或完整群</td>
+</tr>
+<tr>
+<td><strong>居中方式</strong></td>
+<td>星表 <code>SubhaloPos</code></td>
+<td>暗物质质心</td>
+</tr>
+<tr>
+<td><strong>三维产品</strong></td>
+<td>—</td>
+<td><code>SubhaloDataProducts</code>：UV、DM、HI、H₂；实空间与红移空间</td>
+</tr>
+<tr>
+<td><strong>源</strong></td>
+<td>EAGLE、Simba、FIRE、Magneticum、Colibre、SWIFT、…</td>
+<td>仅 TNG</td>
+</tr>
+</tbody>
+</table>
+<p><code>SPHSource</code> 同时接受 <code>distance</code> + <code>h</code>（MARTINI 的接口）和 <code>redshift</code> + <code>cosmology</code>。在距离模式下 <code>D_L == D_A == distance</code>， 因此这条路径的行为与上游完全一致。</p>
+<h3 id="未实现的部分">未实现的部分</h3>
+<ul>
+<li><strong>只有 TNG 源。</strong> 上游的 EAGLE、Simba、FIRE、Magneticum、Colibre、SWIFT 和 <code>CombinedSource</code> 类都不存在 —— 把项目无法测试的源收进仓库， 就意味着发布没人能在这里检查的代码。</li>
+<li><strong>一个数据立方体中的多星系观测</strong>，也就是 <code>CombinedSource</code> 的用途。</li>
+<li><strong>大子晕的内存分块</strong> —— 三维网格是整体构建的。</li>
+</ul>
+<footer>astrovodka &mdash; mock resolved HI observations of IllustrisTNG galaxies.
+Generated from the Markdown sources by <code>docs/build_html.py</code>.</footer>
+</div>
+</body>
+</html>

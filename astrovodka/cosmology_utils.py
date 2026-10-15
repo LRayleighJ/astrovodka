@@ -147,8 +147,13 @@ def systemic_velocity_from_redshift(redshift):
     """
     Compute systemic recession velocity from cosmological redshift.
 
-    Uses the relativistic Doppler formula:
+    Uses the special-relativistic (kinematic) Doppler formula:
     v/c = ((1+z)^2 - 1) / ((1+z)^2 + 1)
+
+    .. note::
+        This is the *optical/kinematic* convention. It is NOT the convention used by
+        the data cube's spectral axis, which follows the radio convention - see
+        :func:`radio_velocity_from_redshift`.
 
     Parameters
     ----------
@@ -164,6 +169,45 @@ def systemic_velocity_from_redshift(redshift):
     z = redshift
     v_over_c = ((1 + z) ** 2 - 1) / ((1 + z) ** 2 + 1)
     return (v_over_c * c_light).to(U.km / U.s)
+
+
+def radio_velocity_from_redshift(redshift, rest_freq=None):
+    """
+    Compute the recession velocity of a line at ``redshift`` in the radio convention.
+
+    The radio (or "radio definition") Doppler convention relates the observed frequency
+    of a line to the velocity of its source as ``f_obs = f_rest * (1 - v/c)``, so
+
+    .. math::
+        v = c \\left(1 - \\frac{f_{\\rm obs}}{f_{\\rm rest}}\\right)
+          = c \\frac{z}{1 + z}.
+
+    This is the convention used throughout the WCS-based spectral machinery
+    (:class:`~astropy.coordinates.SpectralCoord` with ``doppler_convention="radio"``,
+    FITS ``VRAD`` axes and :func:`astropy.units.doppler_radio`), so a source systemic
+    velocity intended to line up with a data cube's spectral axis must be computed
+    with this function rather than :func:`systemic_velocity_from_redshift`.
+
+    Unlike ``H(z) * D_C`` this never exceeds the speed of light: it tends to ``c``
+    as ``z -> inf``.
+
+    Parameters
+    ----------
+    redshift : float
+        Cosmological redshift.
+
+    rest_freq : astropy.units.Quantity or None
+        Rest frequency of the line. Defaults to the HI 21cm line.
+
+    Returns
+    -------
+    astropy.units.Quantity
+        Recession velocity in km/s.
+    """
+    if rest_freq is None:
+        rest_freq = HIfreq
+    f_obs = observed_frequency(redshift, rest_freq)
+    return (const.c * (1.0 - f_obs / rest_freq)).to(U.km / U.s)
 
 
 def observed_frequency(redshift, rest_freq=None):

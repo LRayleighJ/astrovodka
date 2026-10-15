@@ -11,7 +11,15 @@ import astropy.units as U
 import astropy.constants as const
 from astropy.cosmology import Planck15
 
-from .sources._k13_model import compute_HI_mass_particle, compute_galaxy_fft_uv
+from .himodel import (
+    DEFAULT_METHOD,
+    HIModelConfig,
+    calc_UMW_global_Faucher11,
+    compute_hi_mass,
+    is_known,
+    resolve,
+)
+from .himodel.uvfield import compute_galaxy_fft_uv
 from .sources._illustris_tools import loadHeader, loadSingle, loadSubset, getSnapOffsets
 
 
@@ -47,7 +55,9 @@ class SubhaloDataProducts:
         snapNum,
         subID,
         ngrid=128,
-        uv_mode="global",
+        hi_model=DEFAULT_METHOD,
+        hi_config=None,
+        uv_mode="adaptive_fft",
         load_subhalo_only=True,
         cosmology=None,
     ):
@@ -59,7 +69,10 @@ class SubhaloDataProducts:
         snapNum : int — Snapshot number
         subID : int — Subhalo ID
         ngrid : int — Grid resolution per dimension (default 128)
-        uv_mode : str — "global" (UVB) or "adaptive_fft"
+        hi_model : str — one of 'GD14_vol', 'GD14_map', 'K13_vol', 'K13_map'
+            (case-insensitive; 'GD14'/'K13' mean the volume variant).
+        hi_config : HIModelConfig or dict, optional — HI model settings
+        uv_mode : str — 'adaptive_fft' (default) or 'global'; volume models only
         load_subhalo_only : bool — Load subhalo-only (True) or full FOF group
         cosmology : astropy.cosmology.Cosmology or None
 
@@ -67,6 +80,19 @@ class SubhaloDataProducts:
         -------
         SubhaloDataProducts instance
         """
+        if not is_known(hi_model):
+            raise ValueError(
+                f"unknown hi_model {hi_model!r}; choose one of "
+                "['GD14_vol', 'GD14_map', 'K13_vol', 'K13_map']"
+            )
+        spec = resolve(hi_model)
+        is_projected = spec["kind"] == "map"
+        if is_projected and uv_mode == "global":
+            raise ValueError(
+                f"uv_mode='global' does not apply to {spec['label']}: the "
+                "projected models take their UV field from the SFR map"
+            )
+
         dp = cls(ngrid=ngrid)
 
         # --- Load header ---
@@ -79,6 +105,22 @@ class SubhaloDataProducts:
         dp.metadata["scale_factor"] = float(a)
         dp.metadata["snapNum"] = snapNum
         dp.metadata["subID"] = subID
+        dp.metadata["hi_model"] = spec["label"]
+        dp.metadata["hi_reference"] = spec["reference"]
+
+        # h and z come from this snapshot, not from the caller's config
+        overrides = {"h": float(h), "z": float(z)}
+        if header.get("BoxSize"):
+            overrides["boxsize_ckpc_per_h"] = float(header["BoxSize"])
+        cfg = HIModelConfig.build(
+            hi_config,
+            h=overrides["h"],
+            z=overrides["z"],
+            boxsize_ckpc_per_h=overrides.get("boxsize_ckpc_per_h"),
+        )
+        # The product grid resolution also sets the UV grid resolution, so that
+        # the stored uv_field and the field that produced the masses agree.
+        cfg = cfg.with_(ngrid=int(ngrid))
 
         # --- Cosmology for RSD ---
         if cosmology is None:
@@ -120,26 +162,60 @@ class SubhaloDataProducts:
             _mt = _snap["Header"].attrs.get("MassTable", [0.0, 0.0])
             dm_mass_per_particle = float(_mt[1]) * 1e10 / h  # Msun
 
-        # --- Compute K13 HI/H2 masses ---
-        from .sources._k13_model import calc_UMW_global_Faucher11
-        U_MW_global = calc_UMW_global_Faucher11(z)
-
-        if uv_mode == "adaptive_fft":
-            U_MW, uv_grid, uv_edges = compute_galaxy_fft_uv(
-                data_g, redshift=z, hubble_h=h, ngrid=ngrid, return_grid=True,
+        # --- Compute HI/H2 masses with the selected model ---
+        hi_kwargs = {}
+        if is_projected:
+            # The projected models project the galaxy about the subhalo's own
+            # position, so they need the subhalo record and the stars. The stars
+            # are loaded here as well as below for the source-property grids, but
+            # only the fields the model reads are required.
+            star_fields_model = [
+                "Masses", "Coordinates", "Velocities", "GFM_StellarFormationTime",
+            ]
+            data_star_model = loadSubset(
+                basePath, snapNum, "star", fields=star_fields_model,
+                subset=subset_g,
             )
-            dp.uv_field = uv_grid  # Physical kpc grid
-            uv_edges_phys = uv_edges  # edges in physical kpc
-        else:
-            U_MW = U_MW_global
-            uv_edges_phys = None
+            halfmass = np.asarray(
+                data_sub["SubhaloHalfmassRadType"], dtype="float64"
+            )
+            hi_kwargs["stars"] = data_star_model
+            hi_kwargs["sub"] = {
+                "pos": np.asarray(data_sub["SubhaloPos"], dtype="float64"),
+                "vel": np.asarray(data_sub["SubhaloVel"], dtype="float64"),
+                "rhalf_gas": float(halfmass[0]),
+                "rhalf_star": float(halfmass[4]),
+            }
 
-        m_HI, m_H2 = compute_HI_mass_particle(
-            data_g, U_MW, redshift=z, hubble_h=h,
+        hi_result = compute_hi_mass(
+            data_g, spec["label"], cfg, uv_mode=uv_mode, **hi_kwargs
         )
+        m_HI, m_H2 = hi_result.m_hi, hi_result.m_h2
         # TNG code units -> Msun: * 1e10 / h
         m_HI_Msun = m_HI * 1e10 / h
         m_H2_Msun = m_H2 * 1e10 / h
+        dp.metadata["m_HI_Msun"] = float(np.sum(m_HI_Msun))
+        dp.metadata["m_H2_Msun"] = float(np.sum(m_H2_Msun))
+
+        # UV field grid, for the volume models only (the projected models work
+        # on an SFR surface-density map instead, which has its own geometry).
+        uv_edges_phys = None
+        if not is_projected:
+            if uv_mode == "adaptive_fft":
+                # The grid is the raw convolved FFT field -- it does NOT include
+                # the global-background floor that the per-particle values get,
+                # and its axes are in physical kpc, unlike every other grid here.
+                _umw, uv_grid, uv_edges = compute_galaxy_fft_uv(
+                    data_g, cfg, return_grid=True
+                )
+                dp.uv_field = uv_grid
+                uv_edges_phys = uv_edges
+            else:
+                dp.uv_field = np.full(
+                    (ngrid, ngrid, ngrid),
+                    calc_UMW_global_Faucher11(z),
+                    dtype="float32",
+                )
 
         # --- Get comoving coordinates ---
         # Gas coords: ckpc/h (comoving)
@@ -153,20 +229,22 @@ class SubhaloDataProducts:
         dm_vel = data_dm["Velocities"][:].astype("float64")
         dm_vlos = dm_vel[:, 0] * np.sqrt(a)  # LOS peculiar velocity [km/s]
 
-        # --- Define comoving grid ---
-        # Use gas + DM coords for bounds
+        # --- Define comoving grid centered on DM center of mass ---
+        # Compute DM center of mass (equal-mass particles → mean)
+        dm_com = dm_coords.mean(axis=0)  # ckpc/h
+
+        # Extents: max distance from DM COM to any particle (gas + DM), per axis
         all_coords = np.vstack([gas_coords, dm_coords])
-        coord_min = all_coords.min(axis=0)
-        coord_max = all_coords.max(axis=0)
-        coord_range = coord_max - coord_min
-        # Per-axis box: 1.1× each axis's range, with 10 ckpc/h floor
-        box_size = np.maximum(1.1 * coord_range, 10.0)
-        center = (coord_min + coord_max) / 2.0
+        max_dist = np.max(np.abs(all_coords - dm_com), axis=0)  # per-axis max offset
+        half_box = np.maximum(1.1 * max_dist, 5.0)  # at least ±5 ckpc/h per axis
+        center = dm_com
+
+        dp.metadata["dm_centre_ckpc_h"] = [float(c) for c in dm_com]
 
         edges = [
             np.linspace(
-                center[i] - box_size[i] / 2.0,
-                center[i] + box_size[i] / 2.0,
+                center[i] - half_box[i],
+                center[i] + half_box[i],
                 ngrid + 1,
             )
             for i in range(3)
@@ -214,11 +292,21 @@ class SubhaloDataProducts:
         dp.h2_rsd = h2_rsd / _cell_volume(edges)
 
         # --- UV field ---
-        if uv_mode == "adaptive_fft" and dp.uv_field is not None:
-            # uv_field was computed in physical kpc grid; store center positions
+        # dp.uv_field was filled in above (or left None for the projected models,
+        # whose UV field lives on the projection grid, not this one).
+        if dp.uv_field is not None:
+            # unlike every other grid here, uv_field lives on a physical-kpc grid
             dp.metadata["uv_grid_physical_kpc"] = True
-        elif uv_mode == "global":
-            dp.uv_field = np.full((ngrid, ngrid, ngrid), U_MW_global, dtype="float32")
+            if uv_edges_phys is not None:
+                # The UV grid's own bounds, in the same
+                # [x_lo, x_hi, y_lo, y_hi, z_lo, z_hi] order as
+                # grid_bounds_ckpc_h -- but NOT the same grid: uv_field sits on
+                # a physical-kpc box that follows the gas extent, while every
+                # mass grid uses the comoving ckpc/h DM-centred box.
+                bounds = []
+                for axis in uv_edges_phys:
+                    bounds += [float(axis[0]), float(axis[-1])]
+                dp.metadata["uv_grid_bounds_physical_kpc"] = bounds
 
         # Convert to float32 for storage
         for attr in ["uv_field", "dm_real", "dm_rsd", "hi_real", "hi_rsd",

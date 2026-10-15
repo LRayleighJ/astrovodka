@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HI/H₂ 模型</title>
+<style>
+:root{--fg:#1c1e21;--muted:#5c6570;--link:#0b62c4;--rule:#d8dee6;--bg:#fff;
+--code-bg:#f4f6f8;--note-bg:#eef4fb;--head:#12395e}
+@media (prefers-color-scheme:dark){:root{--fg:#e6e8eb;--muted:#9aa5b1;--link:#69a8f5;
+--rule:#39404a;--bg:#15181c;--code-bg:#1e2227;--note-bg:#1b2733;--head:#9cc6f0}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);line-height:1.65;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",
+"Noto Sans CJK SC","Noto Sans CJK JP","PingFang SC","Microsoft YaHei",sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:2rem 1.25rem 4rem}
+nav.lang{font-size:.85rem;color:var(--muted);margin-bottom:2rem;
+display:flex;gap:1rem;flex-wrap:wrap;align-items:center}
+nav.lang a{color:var(--link);text-decoration:none}
+nav.lang a:hover{text-decoration:underline}
+h1,h2,h3,h4,h5,h6{color:var(--head);line-height:1.3;margin:2rem 0 .75rem}
+h1{font-size:1.9rem;border-bottom:2px solid var(--rule);padding-bottom:.4rem}
+h2{font-size:1.45rem;border-bottom:1px solid var(--rule);padding-bottom:.3rem}
+h3{font-size:1.15rem}h4{font-size:1rem}
+a{color:var(--link)}
+p,li{margin:.5rem 0}
+code{background:var(--code-bg);padding:.12em .38em;border-radius:4px;
+font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em}
+pre{background:var(--code-bg);padding:1rem;border-radius:8px;overflow-x:auto;
+border:1px solid var(--rule)}
+pre code{background:none;padding:0;font-size:.86rem;line-height:1.5}
+table{border-collapse:collapse;width:100%;margin:1rem 0;display:block;overflow-x:auto}
+th,td{border:1px solid var(--rule);padding:.45rem .7rem;text-align:left;
+vertical-align:top;font-size:.92rem}
+th{background:var(--code-bg);font-weight:600}
+blockquote{margin:1rem 0;padding:.6rem 1rem;border-left:4px solid var(--link);
+background:var(--note-bg);border-radius:0 6px 6px 0}
+blockquote p{margin:.3rem 0}
+hr{border:0;border-top:1px solid var(--rule);margin:2.5rem 0}
+footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--rule);
+color:var(--muted);font-size:.82rem}
+.idx{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.6rem;
+margin:1.5rem 0}
+.idx a{display:block;padding:.7rem .9rem;border:1px solid var(--rule);border-radius:8px;
+text-decoration:none;background:var(--code-bg)}
+.idx a:hover{border-color:var(--link)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="lang"><a href="../index.html">astrovodka documentation</a><a href="../en/index.html">English</a></nav>
+<h1 id="hih₂-模型">HI/H₂ 模型</h1>
+<p>astrovodka 用四种已发表方案中的一种，为每个 TNG 气体单元指定中性氢 和分子氢的质量。本页说明它们计算什么、彼此有何不同、如何在它们之间 进行选择，以及它们的假设在哪里会出问题。</p>
+<p>函数签名、默认值和完整的配置表见 <a href="zh/api/himodel.html">API 参考</a>； 本页讲的是物理以及由此带来的实际后果。</p>
+<ul>
+<li><a href="#为什么不用-martini-的划分方案">为什么不用 MARTINI 的划分方案</a></li>
+<li><a href="#模型计算什么">模型计算什么</a></li>
+<li><a href="#22gd14-与-k13体密度与投影">2×2：GD14 与 K13，体密度与投影</a></li>
+<li><a href="#uv-场">UV 场</a></li>
+<li><a href="#如何选择模型">如何选择模型</a></li>
+<li><a href="#调整配置">调整配置</a></li>
+<li><a href="#需要注意的地方">需要注意的地方</a></li>
+</ul>
+<hr>
+<h2 id="为什么不用-martini-的划分方案">为什么不用 MARTINI 的划分方案</h2>
+<p>MARTINI 用一个在近邻星系上标定的、基于压强的关系把气体分成 HI 和 H₂。 它不含红移依赖，因此在星系更致密、金属更贫、所处的 UV 场也更强的高红移， 它没有理由是对的。</p>
+<p>Diemer+2018 的模型把它换成了由局部条件出发的计算：气体密度、金属丰度， 以及星际辐射场。正因如此，它们才能在 astrovodka 所针对的红移范围内使用。</p>
+<h2 id="模型计算什么">模型计算什么</h2>
+<p>每个模型都会为每个气体单元给出一个<strong>分子比例</strong></p>
+<pre><code>f_mol = M_H2 / (M_HI + M_H2)</code></pre>
+<p>然后按此拆分该单元的中性气体：</p>
+<pre><code>M_H2      = f_mol       × M_neutral
+M_HI      = (1 - f_mol) × M_neutral
+M_neutral = 该单元的中性氢总质量</code></pre>
+<p><code>f_mol</code> 随气体密度和金属丰度上升 —— 更致密的气体能更有效地把自己 屏蔽在离解辐射之外，而真正起屏蔽作用的是尘埃，因此金属丰度是通过 尘气比进来的。它随 UV 场的强度下降，因为 UV 正是把 H₂ 拆开的东西。</p>
+<p>每个单元还会得到一个<strong>中性比例</strong>，它把电离气体也考虑在内； 按构造，<code>compute_hi_mass</code> 返回的 <code>m_neutral</code> 就等于 <code>m_hi + m_h2</code>。</p>
+<h2 id="22gd14-与-k13体密度与投影">2×2：GD14 与 K13，体密度与投影</h2>
+<p>这四个模型是两套方案族与两种估计方案所需气体面密度的方法的叉积。</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>体密度</strong></th>
+<th><strong>投影</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Gnedin &amp; Draine 2014</strong></td>
+<td><code>GD14_vol</code></td>
+<td><code>GD14_map</code></td>
+</tr>
+<tr>
+<td><strong>Krumholz+ 2013</strong></td>
+<td><code>K13_vol</code> <em>（默认）</em></td>
+<td><code>K13_map</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="gd14-与-k13">GD14 与 K13</h3>
+<p>两个方案族都从一个辐射场参数和一个以尘气比加权的面密度来预测 <code>f_mol</code>， 但它们是在不同的模拟上标定的，对屏蔽的处理也不同。实践中，在 TNG 星系上， <strong>K13 倾向于比 GD14 产出少得多的 H₂</strong> —— 在子晕 122 上这个比值约为 0.18（<code>K13_vol</code>），而 <code>GD14_vol</code> 是 0.43。这是两套方案之间真实的物理分歧， 而不是 bug，也正是同时提供两者的主要原因。</p>
+<h3 id="体密度与投影">体密度与投影</h3>
+<ul>
+<li><strong>体密度</strong>模型用每个单元自身的密度和一个 Jeans 长度近似来估计它的 面密度，<code>Σ = λ_J · ρ</code>。完全局部，不需要投影，也不需要恒星粒子。</li>
+<li><strong>投影</strong>模型构建星系的面向观测者的投影图，并从中读出面密度。 这更接近观测实际的做法 —— 望远镜测的是一条沿视线的柱，而不是体密度 —— 也正是 Diemer+2018 在投影变体中采用的做法。</li>
+</ul>
+<p>因此投影模型除气体之外还需要<strong>恒星粒子</strong>（用来计算恒星面密度）， 开销也更大。它们还必须对落在投影盒之外的气体做出决定 —— 见<a href="#需要注意的地方">需要注意的地方</a>。</p>
+<h2 id="uv-场">UV 场</h2>
+<p><code>f_mol</code> 取决于每个气体单元处的离解辐射场有多强，因此一个模型 再好也好不过它的 UV 场。</p>
+<p><strong>体密度</strong>模型的 UV 场有两个来源，用 <code>uv_mode</code> 选择：</p>
+<table>
+<thead>
+<tr>
+<th><code>uv_mode</code></th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>'adaptive_fft'</code> <em>（默认）</em></td>
+<td>在三维 FFT 网格上用 1/r² 卷积核卷积星系的恒星形成率分布，给出一个对恒星实际位置有响应的逐单元场</td>
+</tr>
+<tr>
+<td><code>'global'</code></td>
+<td>处处使用均匀的 Faucher-Giguère+2011 河外背景</td>
+</tr>
+</tbody>
+</table>
+<p>两者都把背景作为<strong>下限</strong>，因此 <code>'global'</code> 就是没有恒星形成的星系在 <code>'adaptive_fft'</code> 下的极限。在有恒星形成的星系中，两者差别很大： 在教程所用的子晕 113 上，从背景切换到自适应场会让 HI 质量变化约 <strong>+14%</strong>，因为强的局部 UV 场把气体挤出分子相。</p>
+<p><strong>投影</strong>模型的 UV 场由 SFR 图导出，这是方法定义的一部分，因此 <code>uv_mode</code> 对它们不适用。把 <code>'global'</code> 与一个 <code>*_map</code> 模型一起传入会抛出异常， 而不是悄悄忽略这个参数。</p>
+<blockquote>
+<p><strong>一个值得了解的 bug。</strong> 在 0.3.0 之前，自适应场并不工作： 构建三维插值器时，把某一个轴的坐标复用到了全部三个轴上， 于是几乎每个粒子都落在其范围之外，得到 <code>fill_value=0.0</code>。 结果得到的场在数值上与均匀背景完全相同，也就是说 <code>uv_mode='adaptive_fft'</code> 与 <code>uv_mode='global'</code> 给出相同的质量， 而分子质量最多错了 42%。守护这一点的测试基于位置，而不是钉死的 数值 —— 见<a href="zh/verification.html">验证记录</a>。</p>
+</blockquote>
+<h2 id="如何选择模型">如何选择模型</h2>
+<p>默认值是 <code>K13_vol</code>，这是个合理的默认选择：它不需要恒星粒子， 是四者中最便宜的，也是 Diemer+2018 用作基线的那个体密度变体。</p>
+<table>
+<thead>
+<tr>
+<th>如果你想……</th>
+<th>就用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>与 Diemer+2018 星表做对比</td>
+<td><code>K13_vol</code></td>
+</tr>
+<tr>
+<td>匹配观测实际的做法（穿过星系的一条柱）</td>
+<td><code>K13_map</code> 或 <code>GD14_map</code></td>
+</tr>
+<tr>
+<td>看看换一套方案的效果</td>
+<td>在 <code>K13_*</code> 与 <code>GD14_*</code> 之间切换</td>
+</tr>
+<tr>
+<td>用最少的输入数据运行</td>
+<td>一个 <code>*_vol</code> 模型 —— 不需要恒星粒子</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-python">from astrovodka.sources import TNGSource
+
+source = TNGSource(basePath=..., snapNum=99, subID=113, hi_model=&quot;K13_map&quot;)
+print(source.m_HI_total, source.m_H2_g.sum(), source.f_mol_g.mean())</code></pre>
+<p>因为这些模型本来就设计成会有分歧，<strong>一定要报告你用的是哪一个</strong>。 没有它，一个标为“HI 质量”的单一数字是不可复现的。</p>
+<h2 id="调整配置">调整配置</h2>
+<p><code>HIModelConfig</code> 是一个冻结（frozen）数据类，保存依赖快照的取值 （<code>h</code>、<code>z</code>、盒子尺寸）以及各种数值设置。它既可以作为对象传入， 也可以作为普通字典传入：</p>
+<pre><code class="language-python">from astrovodka.himodel import HIModelConfig
+
+TNGSource(..., hi_config=HIModelConfig(h=0.6774, z=0.0, ngrid=64))
+TNGSource(..., hi_config={&quot;ngrid&quot;: 64})          # 效果相同，会替你合并</code></pre>
+<p><code>h</code> 和 <code>z</code> 始终来自快照，从不来自调用方 —— 刻意如此：把它们显式传给 <code>TNGSource</code> 不会有效果，因为快照宇宙学与模型宇宙学之间的不一致 会是无声无息的。</p>
+<p>最可能要紧的设置：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>默认值</th>
+<th>何时修改</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ngrid</code></td>
+<td>128</td>
+<td>探索时为了速度可以调低；UV 网格会变粗</td>
+</tr>
+<tr>
+<td><code>f_esc</code></td>
+<td>0.1</td>
+<td>如果你想测试不同的 UV 逃逸分数</td>
+</tr>
+<tr>
+<td><code>box_expand</code></td>
+<td>1.1</td>
+<td>自适应 UV 盒超出气体之外多远</td>
+</tr>
+<tr>
+<td><code>map_clip_outside</code></td>
+<td><code>False</code></td>
+<td>见下文</td>
+</tr>
+<tr>
+<td><code>k13_variant</code></td>
+<td><code>'2p'</code></td>
+<td>投影 K13 模型中由哪种方案给出 <code>n_CNM</code></td>
+</tr>
+<tr>
+<td><code>vol_fine_grid</code></td>
+<td><code>0.0</code></td>
+<td>Diemer+2018 附录 A.2 的第二个、更细的 UV 网格 —— <strong>默认关闭</strong>，见下文</td>
+</tr>
+</tbody>
+</table>
+<h2 id="需要注意的地方">需要注意的地方</h2>
+<h3 id="落在投影盒之外的气体">落在投影盒之外的气体</h3>
+<p>投影模型把星系*定义成*它们的投影盒。盒外的单元得到<strong>零</strong> HI 和 H₂ —— 这就是方法本身，而该方法在星表中的总量就是盒内的总量。</p>
+<p>落在盒内的气体质量比例会报告为 <code>f_gas_in_map</code>，当它低于 0.9 时 <code>TNGSource</code> 会给出警告。对教程所用的子晕 113 它是 0.955； 对子晕 122 它是 0.883，低到值得注意。</p>
+<p>如果你改为需要质量守恒，可以把盒外的气体夹到边缘像素上：</p>
+<pre><code class="language-python">HIModelConfig(h=0.6774, z=0.0, map_clip_outside=True)</code></pre>
+<p>这样能守恒质量，代价是把气体堆在边界上，而这未必更好 —— 论文在这里没有指定约定，因此两种做法都说得通， 你应该说明自己用的是哪一种。</p>
+<h3 id="第二个-uv-网格默认关闭">第二个 UV 网格默认关闭</h3>
+<p>Diemer+2018 附录 A.2 会把体密度计算跑两遍，第二遍用的网格跨度为 两个气体半质量半径，因为单个粗网格会低估星系中心的 UV 场。 <code>vol_fine_grid</code> 实现了这个开关，可测地让 <code>f_mol</code> 移动 −3 到 −5 个百分点。</p>
+<p>它<strong>默认关闭</strong>有两个原因：论文没有说明如何合并这两个网格； 而且打开它会破坏与参考实现之间的逐位一致性，这一致性记载于 <a href="zh/verification.html">验证记录</a>。启用它是一种实验，而不是一种修正。</p>
+<h3 id="内存">内存</h3>
+<p>体密度模型会构建一个完整的 <code>ngrid³</code> 网格，投影模型则是一张 <code>ngrid_map²</code> 的图。在默认的 128 下这些都不大， 但气体单元超过约 10⁷ 的子晕会受益于分块，而分块尚未实现。</p>
+<h3 id="物理层是独立的">物理层是独立的</h3>
+<p><code>astrovodka.himodel</code> 不从观测层导入任何东西，因此你可以在来自任何地方的 气体单元数组上使用这些模型 —— 另一个模拟、一条后处理流水线、 一次交互式会话 —— 完全不涉及数据立方体：</p>
+<pre><code class="language-python">from astrovodka.himodel import HIModelConfig, compute_hi_mass
+
+result = compute_hi_mass(gas, model=&quot;K13_vol&quot;,
+                         cfg=HIModelConfig(h=0.6774, z=0.0))
+result.m_hi_msun, result.m_h2_msun</code></pre>
+<footer>astrovodka &mdash; mock resolved HI observations of IllustrisTNG galaxies.
+Generated from the Markdown sources by <code>docs/build_html.py</code>.</footer>
+</div>
+</body>
+</html>

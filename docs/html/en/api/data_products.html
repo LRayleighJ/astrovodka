@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>astrovodka.data_products — 3D Gridded Data Products</title>
+<style>
+:root{--fg:#1c1e21;--muted:#5c6570;--link:#0b62c4;--rule:#d8dee6;--bg:#fff;
+--code-bg:#f4f6f8;--note-bg:#eef4fb;--head:#12395e}
+@media (prefers-color-scheme:dark){:root{--fg:#e6e8eb;--muted:#9aa5b1;--link:#69a8f5;
+--rule:#39404a;--bg:#15181c;--code-bg:#1e2227;--note-bg:#1b2733;--head:#9cc6f0}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);line-height:1.65;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",
+"Noto Sans CJK SC","Noto Sans CJK JP","PingFang SC","Microsoft YaHei",sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:2rem 1.25rem 4rem}
+nav.lang{font-size:.85rem;color:var(--muted);margin-bottom:2rem;
+display:flex;gap:1rem;flex-wrap:wrap;align-items:center}
+nav.lang a{color:var(--link);text-decoration:none}
+nav.lang a:hover{text-decoration:underline}
+h1,h2,h3,h4,h5,h6{color:var(--head);line-height:1.3;margin:2rem 0 .75rem}
+h1{font-size:1.9rem;border-bottom:2px solid var(--rule);padding-bottom:.4rem}
+h2{font-size:1.45rem;border-bottom:1px solid var(--rule);padding-bottom:.3rem}
+h3{font-size:1.15rem}h4{font-size:1rem}
+a{color:var(--link)}
+p,li{margin:.5rem 0}
+code{background:var(--code-bg);padding:.12em .38em;border-radius:4px;
+font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em}
+pre{background:var(--code-bg);padding:1rem;border-radius:8px;overflow-x:auto;
+border:1px solid var(--rule)}
+pre code{background:none;padding:0;font-size:.86rem;line-height:1.5}
+table{border-collapse:collapse;width:100%;margin:1rem 0;display:block;overflow-x:auto}
+th,td{border:1px solid var(--rule);padding:.45rem .7rem;text-align:left;
+vertical-align:top;font-size:.92rem}
+th{background:var(--code-bg);font-weight:600}
+blockquote{margin:1rem 0;padding:.6rem 1rem;border-left:4px solid var(--link);
+background:var(--note-bg);border-radius:0 6px 6px 0}
+blockquote p{margin:.3rem 0}
+hr{border:0;border-top:1px solid var(--rule);margin:2.5rem 0}
+footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--rule);
+color:var(--muted);font-size:.82rem}
+.idx{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.6rem;
+margin:1.5rem 0}
+.idx a{display:block;padding:.7rem .9rem;border:1px solid var(--rule);border-radius:8px;
+text-decoration:none;background:var(--code-bg)}
+.idx a:hover{border-color:var(--link)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="lang"><a href="../../index.html">astrovodka documentation</a><a href="../../zh/index.html">简体中文</a></nav>
+<h1 id="astrovodkadata_products--3d-gridded-data-products">astrovodka.data_products — 3D Gridded Data Products</h1>
+<p>Container for 3D gridded data products: UV field, DM/HI/H2 mass density in comoving real-space and redshift-space, with HDF5 I/O.</p>
+<h2 id="subhalodataproducts">SubhaloDataProducts</h2>
+<h3 id="__init__self-ngrid128"><code>__init__(self, ngrid=128)</code></h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ngrid</code></td>
+<td><code>int</code></td>
+<td>Grid resolution per dimension (default: 128)</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h3 id="from_subhalocls-basepath-snapnum-subid-ngrid128-hi_modelk13_vol-hi_confignone-uv_modeadaptive_fft-load_subhalo_onlytrue-cosmologynone--subhalodataproducts"><code>from_subhalo(cls, basePath, snapNum, subID, ngrid=128, hi_model='K13_vol', hi_config=None, uv_mode='adaptive_fft', load_subhalo_only=True, cosmology=None)</code> → <code>SubhaloDataProducts</code></h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>basePath</code></td>
+<td><code>str</code></td>
+<td>TNG data root</td>
+</tr>
+<tr>
+<td><code>snapNum</code></td>
+<td><code>int</code></td>
+<td>Snapshot number</td>
+</tr>
+<tr>
+<td><code>subID</code></td>
+<td><code>int</code></td>
+<td>Subhalo ID</td>
+</tr>
+<tr>
+<td><code>ngrid</code></td>
+<td><code>int</code></td>
+<td>Grid resolution (default: 128)</td>
+</tr>
+<tr>
+<td><code>hi_model</code></td>
+<td><code>str</code></td>
+<td><code>'K13_vol'</code> (default), <code>'K13_map'</code>, <code>'GD14_vol'</code>, <code>'GD14_map'</code></td>
+</tr>
+<tr>
+<td><code>hi_config</code></td>
+<td>`HIModelConfig \</td>
+<td>dict \</td>
+<td>None`</td>
+<td>HI model settings</td>
+</tr>
+<tr>
+<td><code>uv_mode</code></td>
+<td><code>str</code></td>
+<td>Volume models only: <code>'adaptive_fft'</code> (default) or <code>'global'</code></td>
+</tr>
+<tr>
+<td><code>load_subhalo_only</code></td>
+<td><code>bool</code></td>
+<td>Subhalo-only (True) or FOF group</td>
+</tr>
+<tr>
+<td><code>cosmology</code></td>
+<td>`Cosmology \</td>
+<td>None`</td>
+<td>For RSD H(z)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Loads gas (PartType0) + DM (PartType1), plus stars for the projected models. Computes HI/H2 masses with the selected model. The <code>ngrid</code> argument also sets the UV grid resolution. DM mass from <code>Header.MassTable[1]</code>. Grid edges in <strong>comoving ckpc/h</strong>.</p>
+</blockquote>
+<hr>
+<h3 id="save_hdf5self-filename"><code>save_hdf5(self, filename)</code></h3>
+<p>Saves all 7 grids + edges + metadata. LZF compression, chunked storage.</p>
+<h3 id="load_hdf5cls-filename--subhalodataproducts"><code>load_hdf5(cls, filename)</code> → <code>SubhaloDataProducts</code></h3>
+<p>Restores all grids + metadata.</p>
+<hr>
+<h2 id="data-grid-attributes">Data Grid Attributes</h2>
+<p>All grids are <code>(ngrid, ngrid, ngrid)</code> float32 arrays:</p>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Unit</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>uv_field</code></td>
+<td>Draine units</td>
+<td>UV radiation field</td>
+</tr>
+<tr>
+<td><code>dm_real</code></td>
+<td>M&lt;sub&gt;sun&lt;/sub&gt;/(ckpc/h)³</td>
+<td>Comoving DM density (real space)</td>
+</tr>
+<tr>
+<td><code>dm_rsd</code></td>
+<td>M&lt;sub&gt;sun&lt;/sub&gt;/(ckpc/h)³</td>
+<td>Comoving DM density (redshift space)</td>
+</tr>
+<tr>
+<td><code>hi_real</code></td>
+<td>M&lt;sub&gt;sun&lt;/sub&gt;/(ckpc/h)³</td>
+<td>Comoving HI density (real space)</td>
+</tr>
+<tr>
+<td><code>hi_rsd</code></td>
+<td>M&lt;sub&gt;sun&lt;/sub&gt;/(ckpc/h)³</td>
+<td>Comoving HI density (redshift space)</td>
+</tr>
+<tr>
+<td><code>h2_real</code></td>
+<td>M&lt;sub&gt;sun&lt;/sub&gt;/(ckpc/h)³</td>
+<td>Comoving H2 density (real space)</td>
+</tr>
+<tr>
+<td><code>h2_rsd</code></td>
+<td>M&lt;sub&gt;sun&lt;/sub&gt;/(ckpc/h)³</td>
+<td>Comoving H2 density (redshift space)</td>
+</tr>
+<tr>
+<td><code>grid_edges</code></td>
+<td>ckpc/h</td>
+<td>Tuple of 3 edge arrays (length ngrid+1)</td>
+</tr>
+<tr>
+<td><code>metadata</code></td>
+<td>—</td>
+<td>redshift, hubble_h, grid bounds, etc.</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Redshift-space formula:</strong> s&lt;sub&gt;x&lt;/sub&gt; = x + v&lt;sub&gt;los&lt;/sub&gt; / (a × H(a)) where Δx = v&lt;sub&gt;los&lt;/sub&gt; / (a×H(a)) × 1000 × h [ckpc/h].</p>
+</blockquote>
+<footer>astrovodka &mdash; mock resolved HI observations of IllustrisTNG galaxies.
+Generated from the Markdown sources by <code>docs/build_html.py</code>.</footer>
+</div>
+</body>
+</html>

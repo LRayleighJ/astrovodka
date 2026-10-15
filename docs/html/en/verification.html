@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Verification record</title>
+<style>
+:root{--fg:#1c1e21;--muted:#5c6570;--link:#0b62c4;--rule:#d8dee6;--bg:#fff;
+--code-bg:#f4f6f8;--note-bg:#eef4fb;--head:#12395e}
+@media (prefers-color-scheme:dark){:root{--fg:#e6e8eb;--muted:#9aa5b1;--link:#69a8f5;
+--rule:#39404a;--bg:#15181c;--code-bg:#1e2227;--note-bg:#1b2733;--head:#9cc6f0}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);line-height:1.65;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",
+"Noto Sans CJK SC","Noto Sans CJK JP","PingFang SC","Microsoft YaHei",sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:2rem 1.25rem 4rem}
+nav.lang{font-size:.85rem;color:var(--muted);margin-bottom:2rem;
+display:flex;gap:1rem;flex-wrap:wrap;align-items:center}
+nav.lang a{color:var(--link);text-decoration:none}
+nav.lang a:hover{text-decoration:underline}
+h1,h2,h3,h4,h5,h6{color:var(--head);line-height:1.3;margin:2rem 0 .75rem}
+h1{font-size:1.9rem;border-bottom:2px solid var(--rule);padding-bottom:.4rem}
+h2{font-size:1.45rem;border-bottom:1px solid var(--rule);padding-bottom:.3rem}
+h3{font-size:1.15rem}h4{font-size:1rem}
+a{color:var(--link)}
+p,li{margin:.5rem 0}
+code{background:var(--code-bg);padding:.12em .38em;border-radius:4px;
+font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em}
+pre{background:var(--code-bg);padding:1rem;border-radius:8px;overflow-x:auto;
+border:1px solid var(--rule)}
+pre code{background:none;padding:0;font-size:.86rem;line-height:1.5}
+table{border-collapse:collapse;width:100%;margin:1rem 0;display:block;overflow-x:auto}
+th,td{border:1px solid var(--rule);padding:.45rem .7rem;text-align:left;
+vertical-align:top;font-size:.92rem}
+th{background:var(--code-bg);font-weight:600}
+blockquote{margin:1rem 0;padding:.6rem 1rem;border-left:4px solid var(--link);
+background:var(--note-bg);border-radius:0 6px 6px 0}
+blockquote p{margin:.3rem 0}
+hr{border:0;border-top:1px solid var(--rule);margin:2.5rem 0}
+footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--rule);
+color:var(--muted);font-size:.82rem}
+.idx{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.6rem;
+margin:1.5rem 0}
+.idx a{display:block;padding:.7rem .9rem;border:1px solid var(--rule);border-radius:8px;
+text-decoration:none;background:var(--code-bg)}
+.idx a:hover{border-color:var(--link)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="lang"><a href="../index.html">astrovodka documentation</a><a href="../zh/index.html">简体中文</a></nav>
+<h1 id="verification-record">Verification record</h1>
+<p>This page records how the HI/H₂ models in astrovodka were validated. The claim being supported is narrow and specific: <strong>the physics agrees, bit for bit, with the reference implementation</strong>, and the observation pipeline built on top of it conserves mass and puts objects at the right distance.</p>
+<p>Nothing here needs to be taken on trust — every check is either a test in <code>tests/</code> or a command you can re-run.</p>
+<ul>
+<li><a href="#what-is-being-verified">What is being verified</a></li>
+<li><a href="#the-test-suite">The test suite</a></li>
+<li><a href="#bit-for-bit-agreement-with-the-reference">Bit-for-bit agreement with the reference</a></li>
+<li><a href="#end-to-end-checks-on-real-data">End-to-end checks on real data</a></li>
+<li><a href="#choosing-the-demo-subhalo">Choosing the demo subhalo</a></li>
+<li><a href="#reproducing-these-checks">Reproducing these checks</a></li>
+</ul>
+<hr>
+<h2 id="what-is-being-verified">What is being verified</h2>
+<p>The four models are implementations of published prescriptions, not new physics:</p>
+<table>
+<thead>
+<tr>
+<th><code>hi_model</code></th>
+<th>Prescription</th>
+<th>Projection</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GD14_vol</code></td>
+<td>Gnedin &amp; Draine (2014), Appendix C.3</td>
+<td>volume</td>
+</tr>
+<tr>
+<td><code>GD14_map</code></td>
+<td>Gnedin &amp; Draine (2014), §2.3</td>
+<td>projected</td>
+</tr>
+<tr>
+<td><code>K13_vol</code></td>
+<td>Krumholz, McKee &amp; Tumlinson (2013), Appendix C.4</td>
+<td>volume</td>
+</tr>
+<tr>
+<td><code>K13_map</code></td>
+<td>Krumholz+ (2013), §2.3</td>
+<td>projected</td>
+</tr>
+</tbody>
+</table>
+<p>all as assembled by <a href="https://arxiv.org/abs/1806.02341">Diemer+2018 (arXiv:1806.02341)</a>.</p>
+<p>So the question is not "is the physics right" — that is settled by the papers — but "is this code the same code as the reference". Hence the emphasis on exact agreement rather than on plausible-looking numbers.</p>
+<p>The chain is: Diemer+2018's reference implementation (<code>TNGHI_GD14_model/gd14_model.py</code>) → the <code>TNGHIcalc</code> package → <code>astrovodka.himodel</code>. Each arrow was checked by re-running both sides on identical inputs.</p>
+<hr>
+<h2 id="the-test-suite">The test suite</h2>
+<pre><code class="language-bash">python -m pytest tests/ -q      # 125 tests, ~14 s</code></pre>
+<p>It needs <strong>no TNG data, no network and no optional dependencies</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Tests</th>
+<th>What it covers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>test_hi_models.py</code></td>
+<td>52</td>
+<td>Keyword selection across the four methods, config resolution, per-model invariants (fraction ranges, mass conservation, full-length output), the four methods genuinely differing from one another, <code>uv_mode</code> handling, the off-centre FFT UV regression, and the underlying physics</td>
+</tr>
+<tr>
+<td><code>test_pipeline.py</code></td>
+<td>13</td>
+<td>Cosmology mode, spectral-axis/velocity consistency, angular scale equals <code>r/D_A</code>, mass recovery at z = 0.02–1.0</td>
+</tr>
+<tr>
+<td><code>test_selfcontained.py</code></td>
+<td>19</td>
+<td>No <code>import martini</code> anywhere (checked by AST), no <code>martini.*</code> in <code>sys.modules</code> after importing astrovodka, every vendored and own module importable, <code>himodel</code> never importing the observation layer</td>
+</tr>
+<tr>
+<td><code>test_cosmology.py</code></td>
+<td>14</td>
+<td>Distances, H(z), both velocity conventions, observed frequency</td>
+</tr>
+<tr>
+<td><code>test_docs_sync.py</code></td>
+<td>11</td>
+<td>The generated HTML matches the Markdown; the English and Chinese trees stay parallel; relative links resolve</td>
+</tr>
+<tr>
+<td><code>test_data_products.py</code></td>
+<td>16</td>
+<td><code>spectral_unit</code> handling including the width-conversion regression, UV grid exposure, HDF5 round-trip</td>
+</tr>
+</tbody>
+</table>
+<p>Every defect fixed in 0.2.0 and 0.3.0 has a regression test.</p>
+<p>Two of those tests are worth describing, because the obvious way to write them would not have caught the bug:</p>
+<ul>
+<li><strong>The 0.2.0 spectral-width tests assert the numeric value</strong>, not the unit. The original test only checked that the axis carried <em>a</em> frequency unit, which is why a cube retaining 0.007% of its flux passed for two releases.</li>
+<li><strong>The 0.3.0 FFT UV regression is placement-based, not a pinned number.</strong> A broken interpolator returns the background wherever the source happens to sit, so the property worth asserting is "the field responds to where the source is" — pinning a value would have let the same failure back in under a different arrangement of the grid.</li>
+</ul>
+<hr>
+<h2 id="bit-for-bit-agreement-with-the-reference">Bit-for-bit agreement with the reference</h2>
+<p>The physical expressions were ported verbatim — operand order included, since that is what the agreement rests on. The comparisons below were re-run <strong>after</strong> the port:</p>
+<table>
+<thead>
+<tr>
+<th>Comparison</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Every <code>himodel.physics</code> function against <code>TNGHIcalc</code>, on 4000 random cells spanning physical ranges (h = 0.6774, z = 0.5)</td>
+<td>12/12 <code>np.array_equal</code></td>
+</tr>
+<tr>
+<td><code>compute_hi_mass</code> against <code>TNGHIcalc.cells_vol</code> / <code>cells_map</code>, all four methods, synthetic galaxy placed <strong>off-centre</strong></td>
+<td>bit-exact in masses, <code>f_mol</code>, <code>U_MW</code> and <code>row_index</code></td>
+</tr>
+<tr>
+<td>All four methods on <strong>real TNG-100 snap 99 subhalos</strong> 122 (4448 cells), 7 (120 cells) and 4 (86902 cells)</td>
+<td>bit-exact</td>
+</tr>
+</tbody>
+</table>
+<h3 id="why-the-unit-conversions-deserve-their-own-paragraph">Why the unit conversions deserve their own paragraph</h3>
+<p><code>rho_code_to_physical</code> deliberately goes through <strong>astropy's unit chain</strong> rather than multiplying by a hard-coded constant. The two differ: astropy's kpc is 3.0856775814913673 × 10²¹ cm, while the module's own <code>kpc_to_cm</code> is 3.08568 × 10²¹ cm — a relative difference of about 8 × 10⁻⁷. Substituting one for the other is a silent change at the 10⁻⁶ level in <strong>every</strong> density, which propagates into every molecular fraction.</p>
+<p>This is precisely the class of error that bit-exact comparison catches and spot-checking does not, which is why it is asserted.</p>
+<h3 id="a-trap-removed-by-the-port">A trap removed by the port</h3>
+<p>The reference's <code>f_mol_*</code> functions take <code>z = 0.0</code> as a <strong>positional</strong> argument with a default. Calling one without passing the redshift therefore does not fail — it silently overrides the configured redshift with zero. In <code>himodel</code> the redshift comes only from <code>HIModelConfig</code>, and there is no positional default to fall into.</p>
+<hr>
+<h2 id="end-to-end-checks-on-real-data">End-to-end checks on real data</h2>
+<h3 id="all-four-models-through-the-full-pipeline">All four models through the full pipeline</h3>
+<p>TNG-100 snapshot 99, subhalo 122, built through <code>TNGSource</code>:</p>
+<table>
+<thead>
+<tr>
+<th><code>hi_model</code></th>
+<th><code>M_HI</code> [M☉]</th>
+<th><code>M_H₂</code> [M☉]</th>
+<th>Cube mass recovery</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GD14_vol</code></td>
+<td>2.4169 × 10⁹</td>
+<td>1.0397 × 10⁹</td>
+<td>100%</td>
+</tr>
+<tr>
+<td><code>K13_vol</code></td>
+<td>3.2710 × 10⁹</td>
+<td>1.8564 × 10⁸</td>
+<td>100%</td>
+</tr>
+<tr>
+<td><code>GD14_map</code></td>
+<td>2.1310 × 10⁹</td>
+<td>1.2287 × 10⁹</td>
+<td>100%</td>
+</tr>
+<tr>
+<td><code>K13_map</code></td>
+<td>3.0689 × 10⁹</td>
+<td>2.9075 × 10⁸</td>
+<td>100%</td>
+</tr>
+</tbody>
+</table>
+<p>The projected models carry 88.3% of the gas mass inside their projection box, so 474 cells get zero mass. Those are pruned automatically before cube insertion, and the cube's <code>M_HI</code> still matches <code>source.m_HI_total</code> exactly — which is the point: the zero-mass cells never contribute flux, so the recovery stays at 100%.</p>
+<h3 id="distances-velocities-and-the-spectral-axis">Distances, velocities and the spectral axis</h3>
+<p>Subhalo 122 under the default model:</p>
+<table>
+<thead>
+<tr>
+<th>z</th>
+<th><code>vsys</code></th>
+<th>maps to</th>
+<th>expected <code>f_rest/(1+z)</code></th>
+<th>angular scale</th>
+<th>recovered mass</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.02</td>
+<td>5 878 km/s</td>
+<td>1392.55 MHz</td>
+<td>1392.55 MHz</td>
+<td>exact</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>0.10</td>
+<td>27 254 km/s</td>
+<td>1291.28 MHz</td>
+<td>1291.28 MHz</td>
+<td>exact</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>0.50</td>
+<td>99 931 km/s</td>
+<td>946.94 MHz</td>
+<td>946.94 MHz</td>
+<td>exact</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>1.00</td>
+<td>149 896 km/s</td>
+<td>710.20 MHz</td>
+<td>710.20 MHz</td>
+<td>exact</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>2.00</td>
+<td>199 862 km/s</td>
+<td>473.47 MHz</td>
+<td>473.47 MHz</td>
+<td>exact</td>
+<td>100%</td>
+</tr>
+</tbody>
+</table>
+<p>Angular separations match <code>r / D_A</code> at every redshift, and mass recovery is exact. Together these confirm the <code>D_L</code>/<code>D_A</code> split and the flux normalisation — the two places where getting the cosmology wrong costs a factor of <code>(1+z)²</code> or <code>(1+z)⁴</code>.</p>
+<hr>
+<h2 id="choosing-the-demo-subhalo">Choosing the demo subhalo</h2>
+<p>The tutorial uses <strong>subhalo 113</strong> of TNG-100 snapshot 99. It was picked by measuring candidates rather than by taking whichever had the most HI.</p>
+<p>The requirement is HI <em>and</em> star formation. The adaptive FFT UV field only does visible work in star-forming gas, so a gas-rich but quiescent subhalo demonstrates nothing about it — the previous demonstration subhalo was particularly bad in this respect, with the model assigning it about 16 M☉ of HI across 120 gas cells and no star formation at all, which made its cubes noise-dominated for a purely physical reason.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>113</strong> (chosen)</th>
+<th>139</th>
+<th>122</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Gas cells</td>
+<td>8 169</td>
+<td>7 246</td>
+<td>4 448</td>
+</tr>
+<tr>
+<td><code>M_HI</code> [M☉]</td>
+<td>4.3 × 10⁹</td>
+<td><strong>4.5 × 10⁹</strong></td>
+<td>3.3 × 10⁹</td>
+</tr>
+<tr>
+<td><code>M_H₂</code> [M☉]</td>
+<td><strong>1.8 × 10⁹</strong></td>
+<td>3.0 × 10⁸</td>
+<td>1.9 × 10⁸</td>
+</tr>
+<tr>
+<td>SFR [M☉/yr]</td>
+<td>0.98</td>
+<td>0.17</td>
+<td>0.19</td>
+</tr>
+<tr>
+<td>UV field peak / background</td>
+<td><strong>27.6 / 0.0014 (≈ 19 000×)</strong></td>
+<td>2.2</td>
+<td>6.0</td>
+</tr>
+<tr>
+<td>HI mass, <code>adaptive_fft</code> vs <code>global</code></td>
+<td><strong>+13.9%</strong></td>
+<td>+5.7%</td>
+<td>+4.3%</td>
+</tr>
+<tr>
+<td><code>f_gas_in_map</code></td>
+<td><strong>0.955</strong></td>
+<td>0.951</td>
+<td>0.883</td>
+</tr>
+</tbody>
+</table>
+<p>Subhalo 139 has 5% more HI, but its UV field peaks only about 1550× above the background, so the model whose bug 0.3.0 fixed would look almost identical to the broken one there. Subhalo 113 also keeps 95.5% of its gas inside the projection box, which makes the <code>*_map</code> models directly comparable.</p>
+<p>Measured end to end at z = 0.02: 100% mass recovery in both cubes, moment-0 peak S/N 5.5 and total-flux S/N 16.9 for the 10 arcsec beam, 6.5 for the 3 arcmin beam.</p>
+<hr>
+<h2 id="reproducing-these-checks">Reproducing these checks</h2>
+<pre><code class="language-bash"># 1. The unit tests -- no TNG data needed
+python -m pytest tests/ -q
+
+# 2. The tutorial, which asserts on its own results as it runs
+#    (point it at your TNG data first)
+export TNG_BASE_PATH=/path/to/TNG/TNG-100/
+#    ... then run examples/{en,zh}/tutorial_TNG100-HI-mock-observations.ipynb</code></pre>
+<p>Several sections of the tutorial carry <code>assert</code> statements rather than printing numbers for a reader to eyeball: the mass recovery must be 100%, the integrated FITS flux must reproduce the model's own total to within 1%, and the velocity- and frequency-axis cubes must agree in flux. If a change breaks the physics, that notebook fails rather than quietly reporting a different number.</p>
+<footer>astrovodka &mdash; mock resolved HI observations of IllustrisTNG galaxies.
+Generated from the Markdown sources by <code>docs/build_html.py</code>.</footer>
+</div>
+</body>
+</html>

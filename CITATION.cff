@@ -1,0 +1,117 @@
+cff-version: "1.2.0"
+title: "astrovodka: mock resolved HI observations of IllustrisTNG galaxies"
+message: >-
+  astrovodka has no paper of its own yet. If it contributes to your work,
+  please cite the MARTINI papers below — astrovodka is a fork and includes
+  modified MARTINI code — together with the HI/H2 model papers listed in the
+  NOTICE file, which are the physics astrovodka implements.
+type: software
+license: GPL-3.0-or-later
+repository-code: "https://github.com/LRayleighJ/astrovodka"
+authors:
+  - family-names: Liu
+    given-names: Zerui
+    email: liuzr@bao.ac.cn
+contact:
+  - family-names: Liu
+    given-names: Zerui
+    email: liuzr@bao.ac.cn
+keywords:
+  - astronomy
+  - radio astronomy
+  - 21cm
+  - neutral hydrogen
+  - IllustrisTNG
+  - mock observations
+  - galaxy formation
+
+preferred-citation:
+  type: article
+  title: "MARTINI: Mock Array Radio Telescope Interferometry of the Neutral ISM"
+  authors:
+    - family-names: Oman
+      given-names: Kyle A.
+      orcid: "https://orcid.org/0000-0001-9857-7788"
+  journal: Journal of Open Source Software
+  publisher:
+    name: Open Journals
+  volume: 9
+  issue: 98
+  start: 6860
+  year: 2024
+  doi: 10.21105/joss.06860
+  url: "https://joss.theoj.org/papers/10.21105/joss.06860"
+
+references:
+  - type: article
+    title: >-
+      Modeling Molecular Hydrogen and Star Formation in Cosmological Simulations
+    authors:
+      - family-names: Krumholz
+        given-names: Mark R.
+      - family-names: McKee
+        given-names: Christopher F.
+      - family-names: Tumlinson
+        given-names: Jason
+    journal: The Astrophysical Journal
+    volume: 771
+    start: 36
+    year: 2013
+    doi: 10.1088/0004-637X/771/1/36
+  - type: article
+    title: >-
+      Atomic and Molecular Content of Disks around Nearby Galaxies
+    authors:
+      - family-names: Gnedin
+        given-names: Nickolay Y.
+      - family-names: Draine
+        given-names: Bruce T.
+    journal: The Astrophysical Journal
+    volume: 795
+    start: 37
+    year: 2014
+    doi: 10.1088/0004-637X/795/1/37
+  - type: article
+    title: >-
+      Atomic and Molecular Gas in IllustrisTNG Galaxies at Low Redshift
+    authors:
+      - family-names: Diemer
+        given-names: Benedikt
+      - family-names: Stevens
+        given-names: Adam R. H.
+      - family-names: Forbes
+        given-names: John C.
+      - family-names: Marinacci
+        given-names: Federico
+      - family-names: Hernquist
+        given-names: Lars
+      - family-names: Nelson
+        given-names: Dylan
+      - family-names: Pillepich
+        given-names: Annalisa
+      - family-names: Rodriguez-Gomez
+        given-names: Vicente
+      - family-names: Torrey
+        given-names: Paul
+      - family-names: Vogelsberger
+        given-names: Mark
+    journal: The Astrophysical Journal Supplement Series
+    volume: 238
+    start: 33
+    year: 2018
+    doi: 10.3847/1538-4365/aaf8b0
+  - type: article
+    title: >-
+      The baryonic assembly of dark matter haloes
+    authors:
+      - family-names: Faucher-Giguère
+        given-names: Claude-André
+      - family-names: Kereš
+        given-names: Dušan
+      - family-names: Ma
+        given-names: Chung-Pei
+    journal: Monthly Notices of the Royal Astronomical Society
+    volume: 417
+    start: 2980
+    year: 2011
+    doi: 10.1111/j.1365-2966.2011.19457.x

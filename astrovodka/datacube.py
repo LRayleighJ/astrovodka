@@ -1,4 +1,4 @@
-"""Provide the :class:`~martini.datacube.DataCube` class for creating a data cube."""
+"""Provide the :class:`~astrovodka.datacube.DataCube` class for creating a data cube."""
 
 from __future__ import annotations
 from typing import TYPE_CHECKING
@@ -6,6 +6,7 @@ from collections.abc import Callable, Iterator
 import numpy as np
 import astropy.units as U
 from astropy import wcs
+from astropy import constants as const
 from astropy.wcs.wcs import WCS
 from astropy.coordinates import ICRS, SpectralCoord
 import warnings
@@ -21,6 +22,59 @@ except ImportError:
 
 HIfreq: U.Quantity[U.Hz] = 1.420405751e9 * U.Hz
 _supported_specsys = frame_transform_graph.get_names()
+
+
+def _velocity_width_to_frequency(
+    width: U.Quantity[U.km / U.s], rest_freq: U.Quantity[U.Hz] = HIfreq
+) -> U.Quantity[U.Hz]:
+    """
+    Convert a velocity channel *width* to a frequency channel width.
+
+    :mod:`astropy`'s ``doppler_radio`` equivalency maps an *absolute* velocity to the
+    *absolute* frequency at which that velocity is observed, so it cannot be applied to
+    a width: doing so returns approximately ``rest_freq`` rather than a small offset.
+    The correct width transform is the differential of that relation, which for the
+    radio convention ``f = rest_freq * (1 - v / c)`` gives ``|df| = rest_freq * |dv| / c``.
+
+    Parameters
+    ----------
+    width : ~astropy.units.Quantity[~astropy.units.km / ~astropy.units.s]
+        Channel width in velocity units.
+
+    rest_freq : ~astropy.units.Quantity[~astropy.units.Hz]
+        Rest frequency of the line. (default: HI 21cm)
+
+    Returns
+    -------
+    ~astropy.units.Quantity[~astropy.units.Hz]
+        Channel width in frequency units.
+    """
+    return (rest_freq * np.abs(width) / const.c).to(U.Hz)
+
+
+def _frequency_width_to_velocity(
+    width: U.Quantity[U.Hz], rest_freq: U.Quantity[U.Hz] = HIfreq
+) -> U.Quantity[U.km / U.s]:
+    """
+    Convert a frequency channel *width* to a velocity channel width.
+
+    The inverse of :func:`_velocity_width_to_frequency`; see that function for why the
+    ``doppler_radio`` equivalency must not be used directly on a width.
+
+    Parameters
+    ----------
+    width : ~astropy.units.Quantity[~astropy.units.Hz]
+        Channel width in frequency units.
+
+    rest_freq : ~astropy.units.Quantity[~astropy.units.Hz]
+        Rest frequency of the line. (default: HI 21cm)
+
+    Returns
+    -------
+    ~astropy.units.Quantity[~astropy.units.km / ~astropy.units.s]
+        Channel width in velocity units.
+    """
+    return (const.c * np.abs(width) / rest_freq).to(U.km / U.s)
 
 
 def _validate_specsys(specsys: str) -> str:
@@ -53,8 +107,8 @@ class DataCube(object):
 
     Basic usage simply involves initializing with the parameters listed below.
     More advanced usage might arise if designing custom classes for other sub-
-    modules, especially beams. To initialize a :class:`~martini.datacube.DataCube`
-    from a saved state, see :meth:`~martini.datacube.DataCube.load_state`.
+    modules, especially beams. To initialize a :class:`~astrovodka.datacube.DataCube`
+    from a saved state, see :meth:`~astrovodka.datacube.DataCube.load_state`.
 
     Parameters
     ----------
@@ -107,13 +161,22 @@ class DataCube(object):
         ``"icrs"``, ``"hcrs"``, ``"lsrk"``, ``"lsrd"``, ``"lsr"``. For a complete list,
         use :meth:`astropy.coordinates.frame_transform_graph.get_names`.
 
+    spectral_unit : str or None, optional
+        Unit of the spectral axis: ``"MHz"`` for a frequency axis (WCS ``CTYPE3`` is
+        ``FREQ``), ``"km/s"`` for a velocity axis (``CTYPE3`` is ``VRAD``), or ``None``
+        (default) to adopt the units of ``channel_width``. This matches MARTINI's
+        behaviour, so a velocity ``channel_width`` gives a velocity axis and a frequency
+        ``channel_width`` gives a frequency axis. If the requested unit differs from the
+        units of ``channel_width``, the width is converted using the differential of the
+        radio-convention Doppler relation (see :func:`_velocity_width_to_frequency`).
+
     velocity_centre : ~astropy.units.Quantity, deprecated
         Deprecated, use spectral centre instead.
 
     See Also
     --------
-    martini.datacube.DataCube.load_state
-    martini.datacube.DataCube.from_wcs
+    astrovodka.datacube.DataCube.load_state
+    astrovodka.datacube.DataCube.from_wcs
 
     Notes
     -----
@@ -169,7 +232,7 @@ class DataCube(object):
         stokes_axis: bool = False,
         coordinate_frame: "BaseRADecFrame" = ICRS(),
         specsys: str = "icrs",
-        spectral_unit: str = "MHz",
+        spectral_unit: str | None = None,
         velocity_centre: None = None,  # deprecated
     ) -> None:
         if velocity_centre is not None:  # pragma: no cover
@@ -186,21 +249,23 @@ class DataCube(object):
                 "spectral_unit must be 'MHz', 'km/s', or None (auto-detect)."
             )
 
-        # Determine native unit from channel_width if auto-detecting
-        if spectral_unit is None:
-            if U.get_physical_type(channel_width) == "frequency":
-                spectral_unit = "MHz"
-            elif U.get_physical_type(channel_width) == "velocity":
-                spectral_unit = "km/s"
+        channel_width_type = U.get_physical_type(channel_width)
+        if channel_width_type not in ("frequency", "velocity"):
+            raise ValueError("Channel width must have frequency or velocity units.")
 
-        # Convert to desired spectral unit
+        # Determine native unit from channel_width if auto-detecting. This reproduces
+        # MARTINI's behaviour: the spectral axis adopts the units the caller supplied.
+        if spectral_unit is None:
+            spectral_unit = "MHz" if channel_width_type == "frequency" else "km/s"
+
+        # Convert to the requested spectral unit. Note that `channel_width` is a width,
+        # so it is transformed by the *differential* of the Doppler relation - see
+        # `_velocity_width_to_frequency`.
         if spectral_unit == "MHz":
-            if U.get_physical_type(channel_width) == "velocity":
-                # Convert velocity channel_width to frequency
-                channel_width = np.abs(
-                    channel_width.to(U.Hz, equivalencies=U.doppler_radio(HIfreq))
-                )
-            # Ensure spectral_centre is in frequency
+            if channel_width_type == "velocity":
+                channel_width = _velocity_width_to_frequency(channel_width)
+            # spectral_centre is an absolute velocity/frequency, so the doppler
+            # equivalency applies directly here.
             spectral_centre = SpectralCoord(
                 spectral_centre,
                 doppler_convention="radio",
@@ -208,18 +273,18 @@ class DataCube(object):
             ).to(U.Hz)
             self._freq_channel_mode = True
         else:  # "km/s"
-            if U.get_physical_type(channel_width) == "frequency":
-                # Convert frequency channel_width to velocity
-                channel_width = np.abs(
-                    channel_width.to(U.km / U.s, equivalencies=U.doppler_radio(HIfreq))
-                )
-            # Ensure spectral_centre is in velocity
+            if channel_width_type == "frequency":
+                channel_width = _frequency_width_to_velocity(channel_width)
             spectral_centre = SpectralCoord(
                 spectral_centre,
                 doppler_convention="radio",
                 doppler_rest=HIfreq,
             ).to(U.km / U.s)
             self._freq_channel_mode = False
+
+        # Remember the resolved unit so that the cube can be rebuilt consistently
+        # (see `copy`, `load_state`, `from_wcs` and `_BaseMartini.reset`).
+        self._spectral_unit = spectral_unit
 
         self.stokes_axis = stokes_axis
         self.coordinate_frame = coordinate_frame
@@ -279,9 +344,9 @@ class DataCube(object):
 
         To create a MARTINI data cube with pixels and channels exactly matching an
         observed data cube (stored in a FITS file) would be a bit tedious using the usual
-        :meth:`~martini.datacube.DataCube.__init__` since the number of pixels, channel
+        :meth:`~astrovodka.datacube.DataCube.__init__` since the number of pixels, channel
         spacing and so on must be specified by hand. This function instead constructs a
-        :class:`~martini.datacube.DataCube` from a :class:`~astropy.wcs.WCS` instance,
+        :class:`~astrovodka.datacube.DataCube` from a :class:`~astropy.wcs.WCS` instance,
         that can be easily obtained from a FITS file or header (see example below). The
         resulting data cube has exactly the same dimensions (pixels and channels) and
         World Coordinate System (WCS) as the input WCS.
@@ -290,7 +355,7 @@ class DataCube(object):
         ----------
         input_wcs : ~astropy.wcs.WCS
             The :class:`~astropy.wcs.WCS` instance to use as the basis for the
-            :class:`~martini.datacube.DataCube`.
+            :class:`~astrovodka.datacube.DataCube`.
 
         specsys : str, optional
             The spectral reference frame (standard of rest) of the World Coordinate System
@@ -299,14 +364,14 @@ class DataCube(object):
 
         See Also
         --------
-        martini.datacube.DataCube
+        astrovodka.datacube.DataCube
 
         Notes
         -----
         MARTINI's data cubes have a fixed axis ordering: first the RA axis, then the
         Dec axis, then the spectral axis, and finally the Stokes' axis (if present). A
-        :class:`~martini.datacube.DataCube` created with
-        :meth:`~martini.datacube.DataCube.from_wcs` may therefore have its axes
+        :class:`~astrovodka.datacube.DataCube` created with
+        :meth:`~astrovodka.datacube.DataCube.from_wcs` may therefore have its axes
         re-ordered (tranposed) relative to the ``input_wcs``. The FITS files output by
         MARTINI have the same axis ordering, and may therefore also be transposed
         relative to a data cube used to construct the :class:`~astropy.wcs.WCS` for
@@ -316,7 +381,7 @@ class DataCube(object):
         --------
         It is easy to initialize a :class:`~astropy.wcs.WCS` from a FITS-format header.
         For example, given a FITS file ``my_cube.fits``, setting up a
-        :class:`~martini.datacube.DataCube` with matching World Coordinate System (WCS)
+        :class:`~astrovodka.datacube.DataCube` with matching World Coordinate System (WCS)
         looks like::
 
             from astropy import wcs
@@ -367,6 +432,11 @@ class DataCube(object):
         init_args["channel_width"] = np.abs(input_wcs.wcs.cdelt[ax_spec]) * unit_spec
         init_args["n_channels"] = input_wcs.pixel_shape[ax_spec]
         init_args["spectral_centre"] = centre_coords[ax_spec] * unit_spec
+        # Adopt the spectral axis type of the input WCS, so that the cube is not
+        # rebuilt in a different unit from the one the WCS describes.
+        init_args["spectral_unit"] = (
+            "MHz" if U.get_physical_type(unit_spec) == "frequency" else "km/s"
+        )
         init_args["coordinate_frame"] = wcs.utils.wcs_to_celestial_frame(input_wcs)
         if specsys is not None:
             _validate_specsys(specsys)
@@ -466,7 +536,7 @@ class DataCube(object):
         -------
         ~astropy.wcs.WCS
             The :class:`~astropy.wcs.WCS` instance that describes the
-            :class:`~martini.datacube.DataCube`'s World Coordinate System (WCS).
+            :class:`~astrovodka.datacube.DataCube`'s World Coordinate System (WCS).
         """
         if self._wcs is None:
             hdr = wcs.utils.celestial_frame_to_wcs(self.coordinate_frame).to_header()
@@ -645,7 +715,7 @@ class DataCube(object):
         """
         An iterator over the channel maps.
 
-        An alias for :meth:`~martini.datacube.DataCube.spatial_slices`.
+        An alias for :meth:`~astrovodka.datacube.DataCube.spatial_slices`.
 
         Returns
         -------
@@ -717,7 +787,7 @@ class DataCube(object):
 
         See Also
         --------
-        martini.datacube.DataCube.drop_pad
+        astrovodka.datacube.DataCube.drop_pad
         """
         if self.padx > 0 or self.pady > 0:
             raise RuntimeError("Tried to add padding to already padded datacube array.")
@@ -743,14 +813,14 @@ class DataCube(object):
 
     def drop_pad(self) -> None:
         """
-        Remove the padding added using :meth:`~martini.datacube.DataCube.add_pad`.
+        Remove the padding added using :meth:`~astrovodka.datacube.DataCube.add_pad`.
 
         After convolution, the pad region contains meaningless information and can be
         discarded.
 
         See Also
         --------
-        martini.datacube.DataCube.add_pad
+        astrovodka.datacube.DataCube.add_pad
         """
         if (self.padx == 0) and (self.pady == 0):
             return
@@ -764,15 +834,15 @@ class DataCube(object):
 
     def copy(self) -> Self:
         """
-        Produce a copy of the :class:`~martini.datacube.DataCube`.
+        Produce a copy of the :class:`~astrovodka.datacube.DataCube`.
 
         May be especially useful to create multiple datacubes with differing intermediate
         steps.
 
         Returns
         -------
-        ~martini.datacube.DataCube
-            Copy of the :class:`~martini.datacube.DataCube` object.
+        ~astrovodka.datacube.DataCube
+            Copy of the :class:`~astrovodka.datacube.DataCube` object.
         """
         copy = type(self)(
             n_px_x=self.n_px_x,
@@ -783,6 +853,10 @@ class DataCube(object):
             spectral_centre=self.spectral_centre,
             ra=self.ra,
             dec=self.dec,
+            stokes_axis=self.stokes_axis,
+            coordinate_frame=self.coordinate_frame,
+            specsys=self.specsys,
+            spectral_unit=self._spectral_unit,
         )
         copy.padx, copy.pady = self.padx, self.pady
         copy._wcs = self.wcs.copy()
@@ -794,13 +868,13 @@ class DataCube(object):
 
     def save_state(self, filename: str, overwrite: bool = False) -> None:
         """
-        Write the :class:`~martini.datacube.DataCube` state to file for re-use.
+        Write the :class:`~astrovodka.datacube.DataCube` state to file for re-use.
 
         The state can be re-initialized (see
-        :meth:`~martini.datacube.DataCube.load_state`). Note that :mod:`h5py` must be
+        :meth:`~astrovodka.datacube.DataCube.load_state`). Note that :mod:`h5py` must be
         installed for use. NOT for outputting mock observations, for this see
-        :meth:`~martini.martini.Martini.write_fits` and
-        :meth:`~martini.martini.Martini.write_hdf5`.
+        :meth:`~astrovodka.martini.Martini.write_fits` and
+        :meth:`~astrovodka.martini.Martini.write_hdf5`.
 
         Parameters
         ----------
@@ -812,7 +886,7 @@ class DataCube(object):
 
         See Also
         --------
-        martini.datacube.DataCube.load_state
+        astrovodka.datacube.DataCube.load_state
         """
         import h5py
 
@@ -846,6 +920,7 @@ class DataCube(object):
             f["_array"].attrs["padx"] = self.padx
             f["_array"].attrs["pady"] = self.pady
             f["_array"].attrs["_freq_channel_mode"] = int(self._freq_channel_mode)
+            f["_array"].attrs["spectral_unit"] = self._spectral_unit
             f["_array"].attrs["stokes_axis"] = self.stokes_axis
             f["_array"].attrs["wcs_hdr"] = self.wcs.to_header_string()
         return
@@ -853,10 +928,10 @@ class DataCube(object):
     @classmethod
     def load_state(cls, filename: str) -> Self:
         """
-        Initialize a :class:`~martini.datacube.DataCube` from a state saved.
+        Initialize a :class:`~astrovodka.datacube.DataCube` from a state saved.
 
         Note that :mod:`h5py` must be installed for use. Note that ONLY the
-        :class:`~martini.datacube.DataCube` state is restored, other modules and their
+        :class:`~astrovodka.datacube.DataCube` state is restored, other modules and their
         configurations are not affected.
 
         Parameters
@@ -866,12 +941,12 @@ class DataCube(object):
 
         Returns
         -------
-        ~martini.datacube.DataCube
-            A suitably initialized :class:`~martini.datacube.DataCube` object.
+        ~astrovodka.datacube.DataCube
+            A suitably initialized :class:`~astrovodka.datacube.DataCube` object.
 
         See Also
         --------
-        martini.datacube.DataCube.save_state
+        astrovodka.datacube.DataCube.save_state
         """
         import h5py
 
@@ -891,6 +966,12 @@ class DataCube(object):
             ra = f["_array"].attrs["ra"] * U.Unit(f["_array"].attrs["ra_unit"])
             dec = f["_array"].attrs["dec"] * U.Unit(f["_array"].attrs["dec_unit"])
             stokes_axis = bool(f["_array"].attrs["stokes_axis"])
+            # Older state files predate the `spectral_unit` attribute; fall back to
+            # the recorded channel mode, which carries the same information.
+            spectral_unit = f["_array"].attrs.get(
+                "spectral_unit",
+                "MHz" if f["_array"].attrs.get("_freq_channel_mode", 0) else "km/s",
+            )
             D = cls(
                 n_px_x=n_px_x,
                 n_px_y=n_px_y,
@@ -901,6 +982,7 @@ class DataCube(object):
                 ra=ra,
                 dec=dec,
                 stokes_axis=stokes_axis,
+                spectral_unit=spectral_unit,
             )
             D.add_pad((f["_array"].attrs["padx"], f["_array"].attrs["pady"]))
             D._array = f["_array"] * U.Unit(f["_array"].attrs["datacube_unit"])
@@ -915,7 +997,7 @@ class DataCube(object):
         Returns
         -------
         str
-            Text representation of the :attr:`~martini.datacube.DataCube._array` contents.
+            Text representation of the :attr:`~astrovodka.datacube.DataCube._array` contents.
         """
         return self._array.__repr__()
 

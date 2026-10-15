@@ -1,0 +1,73 @@
+astrovodka — copyright, provenance and licence notice
+=====================================================
+
+astrovodka is a derivative work of MARTINI. It is distributed under the GNU
+General Public License, version 3 or later; the full licence text is in the
+file LICENSE in this directory.
+
+
+1. Upstream work
+----------------
+
+    MARTINI: Mock Array Radio Telescope Interferometry of the Neutral ISM
+    Copyright (C) Kyle A. Oman and contributors
+    https://github.com/kyleaoman/martini
+    Licensed under the GNU General Public License v3.
+
+The observation machinery in this package — the core pipeline (astrovodka/martini.py),
+the data cube (astrovodka/datacube.py), beams, noise, spectral line models, SPH
+smoothing kernels, angular-momentum coordinates (astrovodka/L_coords.py) and the
+Illustris data I/O helpers (astrovodka/sources/_illustris_tools.py,
+astrovodka/sources/_L_align.py, astrovodka/sources/_extra_cartesian_transforms.py)
+— is derived from MARTINI and has been modified. It is vendored into this package
+rather than imported, so astrovodka has no runtime dependency on the `astromartini`
+distribution.
+
+In accordance with section 5(a) of the GNU GPL v3, notice is given that these
+files have been changed. The changes comprise, among others: renaming the
+top-level package from `martini` to `astrovodka`; replacing the linear Hubble law
+distance handling with astropy cosmological distances; changing the systemic
+velocity convention to the radio convention c*z/(1+z); and adding a redshift mode
+to SPHSource. See CHANGELOG.md for the full history of modifications.
+
+
+2. This work
+------------
+
+    astrovodka
+    Copyright (C) 2026 Zerui Liu <liuzr@bao.ac.cn>
+
+The following are original to astrovodka and are not derived from MARTINI:
+
+  - astrovodka/himodel/           the four Diemer+2018 HI/H2 models, the adaptive
+                                  FFT UV field, and the per-galaxy drivers
+  - astrovodka/cosmology_utils.py cosmological distance, velocity and TNG unit
+                                  conversions
+  - astrovodka/data_products.py   SubhaloDataProducts (3D gridded products)
+  - astrovodka/sources/tng_source.py
+                                  the TNGSource class and its local-disk TNG I/O
+
+
+3. Third-party data and results
+-------------------------------
+
+This software implements models published by others. If you use it in a
+publication, cite the model papers alongside the MARTINI papers — see the
+"Credits and citation" section of README.md, and CITATION.cff.
+
+The HI/H2 prescriptions in astrovodka/himodel are implementations of:
+
+  - Gnedin, N. Y. & Draine, B. T. 2014, ApJ, 795, 37
+  - Krumholz, M. R., McKee, C. F. & Tumlinson, J. 2013, ApJ, 771, 36
+  - Diemer, B., Stevens, A. R. H., Forbes, J. C., et al. 2018, ApJS, 238, 33
+    (the reference implementation these were verified against)
+  - Faucher-Giguère, C.-A., Kereš, D., Ma, C.-P., et al. 2011, MNRAS, 415, 3237
+    (the UV background used as a floor)
+
+
+4. No warranty
+--------------
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU General Public License for more details.

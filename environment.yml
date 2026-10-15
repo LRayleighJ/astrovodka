@@ -1,0 +1,44 @@
+# Conda environment for astrovodka.
+#
+#     conda env create -f environment.yml
+#     conda activate astrovodka
+#
+# The version comments record the set the repository is developed and verified
+# against (Python 3.9.0, numpy 1.26.4, scipy 1.13.1, astropy 6.0.1). They are
+# lower bounds rather than exact pins so the file keeps working on newer
+# Python and on platforms where a given build is unavailable. To reproduce the
+# verified environment exactly, replace the bounds with the commented versions.
+#
+# Python 3.9 is the floor because it is the oldest version the code is tested
+# on; see "Python version support" in docs/en/installation.md.
+
+name: astrovodka
+
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  - python>=3.9          # verified on 3.9.0
+  - numpy>=1.20          # 1.26.4
+  - scipy>=1.6           # 1.13.1
+  - astropy>=5.0         # 6.0.1
+  - tqdm>=4.40           # 4.67.1
+
+  # Optional: TNG snapshot reading, HDF5 products and figures. Comment out any
+  # of these if you only need the physics layer (astrovodka.himodel).
+  - h5py>=3.0            # 3.12.1
+  - matplotlib>=3.4      # 3.9.3
+
+  # Testing.
+  - pytest>=7.0          # 8.4.2
+  - pytest-cov>=4.0
+
+  # `multiprocess` (not the stdlib `multiprocessing`) is what MARTINI uses for
+  # multi-core source insertion; it is not on the default conda channels for
+  # every platform, so it is installed through pip below.
+  - pip
+  - pip:
+      - multiprocess>=0.70   # 0.70.17
+      # Editable install of astrovodka itself.
+      - -e .

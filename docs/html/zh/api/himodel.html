@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>`astrovodka.himodel` — HI/H2 质量模型</title>
+<style>
+:root{--fg:#1c1e21;--muted:#5c6570;--link:#0b62c4;--rule:#d8dee6;--bg:#fff;
+--code-bg:#f4f6f8;--note-bg:#eef4fb;--head:#12395e}
+@media (prefers-color-scheme:dark){:root{--fg:#e6e8eb;--muted:#9aa5b1;--link:#69a8f5;
+--rule:#39404a;--bg:#15181c;--code-bg:#1e2227;--note-bg:#1b2733;--head:#9cc6f0}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);line-height:1.65;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",
+"Noto Sans CJK SC","Noto Sans CJK JP","PingFang SC","Microsoft YaHei",sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:2rem 1.25rem 4rem}
+nav.lang{font-size:.85rem;color:var(--muted);margin-bottom:2rem;
+display:flex;gap:1rem;flex-wrap:wrap;align-items:center}
+nav.lang a{color:var(--link);text-decoration:none}
+nav.lang a:hover{text-decoration:underline}
+h1,h2,h3,h4,h5,h6{color:var(--head);line-height:1.3;margin:2rem 0 .75rem}
+h1{font-size:1.9rem;border-bottom:2px solid var(--rule);padding-bottom:.4rem}
+h2{font-size:1.45rem;border-bottom:1px solid var(--rule);padding-bottom:.3rem}
+h3{font-size:1.15rem}h4{font-size:1rem}
+a{color:var(--link)}
+p,li{margin:.5rem 0}
+code{background:var(--code-bg);padding:.12em .38em;border-radius:4px;
+font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em}
+pre{background:var(--code-bg);padding:1rem;border-radius:8px;overflow-x:auto;
+border:1px solid var(--rule)}
+pre code{background:none;padding:0;font-size:.86rem;line-height:1.5}
+table{border-collapse:collapse;width:100%;margin:1rem 0;display:block;overflow-x:auto}
+th,td{border:1px solid var(--rule);padding:.45rem .7rem;text-align:left;
+vertical-align:top;font-size:.92rem}
+th{background:var(--code-bg);font-weight:600}
+blockquote{margin:1rem 0;padding:.6rem 1rem;border-left:4px solid var(--link);
+background:var(--note-bg);border-radius:0 6px 6px 0}
+blockquote p{margin:.3rem 0}
+hr{border:0;border-top:1px solid var(--rule);margin:2.5rem 0}
+footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--rule);
+color:var(--muted);font-size:.82rem}
+.idx{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.6rem;
+margin:1.5rem 0}
+.idx a{display:block;padding:.7rem .9rem;border:1px solid var(--rule);border-radius:8px;
+text-decoration:none;background:var(--code-bg)}
+.idx a:hover{border-color:var(--link)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="lang"><a href="../../index.html">astrovodka documentation</a><a href="../../en/index.html">English</a></nav>
+<h1 id="astrovodkahimodel--hih2-质量模型"><code>astrovodka.himodel</code> — HI/H2 质量模型</h1>
+<p>用于给出 IllustrisTNG 气体单元中性氢与分子氢含量的四种可选模型， 全部按照 <a href="https://arxiv.org/abs/1806.02341">Diemer+2018 (arXiv:1806.02341)</a> 的实现方式：</p>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>面密度来源</th>
+<th>参考文献</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GD14_vol</code></td>
+<td>逐单元 Jeans 近似，<code>Sigma = lambda_J * rho</code></td>
+<td>Gnedin &amp; Draine (2014)，附录 C.3</td>
+</tr>
+<tr>
+<td><code>GD14_map</code></td>
+<td>面向观测者的 128² 投影</td>
+<td>同上 + §2.3</td>
+</tr>
+<tr>
+<td><code>K13_vol</code></td>
+<td>逐单元 Jeans 近似</td>
+<td>Krumholz, McKee &amp; Tumlinson (2013)，附录 C.4</td>
+</tr>
+<tr>
+<td><code>K13_map</code></td>
+<td>面向观测者的 128² 投影</td>
+<td>同上 + §2.3</td>
+</tr>
+</tbody>
+</table>
+<p>这四个模型都取代了 MARTINI 基于压强的划分方案，后者是在 近邻星系上标定的，且不随红移变化。</p>
+<h2 id="快速开始">快速开始</h2>
+<pre><code class="language-python">from astrovodka.himodel import HIModelConfig, compute_hi_mass
+
+cfg = HIModelConfig(h=0.6774, z=0.0)        # h、z 取自快照头
+
+res = compute_hi_mass(gas, model=&#x27;K13_vol&#x27;, cfg=cfg)
+res.m_hi          # 每个气体单元，TNG 代码单位 (1e10 Msun/h)
+res.m_h2
+res.m_hi_msun     # 总量，Msun
+
+# 投影模型还需要恒星粒子和子晕记录
+res = compute_hi_mass(gas, model=&#x27;K13_map&#x27;, cfg=cfg, stars=stars, sub=sub)</code></pre>
+<h2 id="用关键字选择模型">用关键字选择模型</h2>
+<p><code>model</code> 不区分大小写。只写模型名 <code>'K13'</code> 和 <code>'GD14'</code> 时表示 体密度变体，也接受双参数写法 <code>('GD14', 'map')</code>。</p>
+<pre><code class="language-python">from astrovodka.himodel import METHODS, resolve, is_known
+
+METHODS           # (&#x27;GD14_vol&#x27;, &#x27;GD14_map&#x27;, &#x27;K13_vol&#x27;, &#x27;K13_map&#x27;)
+is_known(&#x27;k13_map&#x27;)          # True
+resolve(&#x27;K13&#x27;)[&#x27;label&#x27;]      # &#x27;K13_vol&#x27;</code></pre>
+<p>源类上也可以使用同一个关键字：</p>
+<pre><code class="language-python">from astrovodka.sources import TNGSource
+
+source = TNGSource(basePath=..., snapNum=99, subID=113, hi_model=&#x27;GD14_map&#x27;)
+source.m_HI_total     # 单位为 Msun
+source.m_H2_g         # 逐粒子 H2 质量
+source.f_mol_g        # 逐单元分子比例</code></pre>
+<h2 id="函数">函数</h2>
+<table>
+<thead>
+<tr>
+<th>函数</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>compute_hi_mass(gas, model, cfg, *, stars, sub, uv_mode, uv)</code></td>
+<td>在四种模型中任选一种，计算逐单元的 HI 与 H2 质量。主入口。</td>
+</tr>
+<tr>
+<td><code>compute_galaxy_hi_h2_map(gas, stars, sub, cfg, model, ...)</code></td>
+<td>单独使用投影路径：构建面向观测者的投影图，返回星系总量以及对齐诊断信息。</td>
+</tr>
+<tr>
+<td><code>calc_UMW_global_Faucher11(redshift)</code></td>
+<td>以 Draine 单位表示的 Faucher-Giguère+2011 UV 背景。</td>
+</tr>
+<tr>
+<td><code>resolve(method)</code> / <code>is_known(method)</code></td>
+<td>方法名查找。</td>
+</tr>
+</tbody>
+</table>
+<p>如果需要直接使用更底层的组件：</p>
+<table>
+<thead>
+<tr>
+<th>模块</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>himodel.physics</code></td>
+<td>单位换算、<code>f_mol_GD14_vol</code>、<code>f_mol_K13_vol</code>、<code>get_f_neutral_H</code></td>
+</tr>
+<tr>
+<td><code>himodel.models</code></td>
+<td><code>f_mol_GD14_map</code>、<code>f_mol_K13_map</code>、<code>calc_rho_star_map</code>、<code>calc_rho_dm_nfw_map</code>、<code>MODEL_SPEC</code></td>
+</tr>
+<tr>
+<td><code>himodel.uvfield</code></td>
+<td><code>compute_galaxy_fft_uv</code>、<code>compute_galaxy_fft_uv_map</code>、<code>compute_align_vector</code>、<code>deposit_gaussian_maps</code></td>
+</tr>
+<tr>
+<td><code>himodel.constants</code></td>
+<td>物理常数与模型默认值（不含 <code>h</code>）</td>
+</tr>
+<tr>
+<td><code>himodel.config</code></td>
+<td><code>HIModelConfig</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="单位">单位</h2>
+<table>
+<thead>
+<tr>
+<th>量</th>
+<th>单位</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>HiMassResult.m_hi</code>、<code>.m_h2</code></td>
+<td>TNG 代码单位 <code>1e10 Msun / h</code> — 与 <code>Masses</code> 字段相同的单位</td>
+</tr>
+<tr>
+<td><code>HiMassResult.m_hi_msun</code>、<code>.m_h2_msun</code>、<code>.m_neutral_msun</code></td>
+<td>Msun</td>
+</tr>
+<tr>
+<td><code>HiMassResult.u_mw</code></td>
+<td>Draine 场单位（<code>U_MW = 1</code> 即银河系的值）</td>
+</tr>
+</tbody>
+</table>
+<p>模型内部的密度用 <code>HIModelConfig.h</code> 和 <code>.z</code> 换算； <code>h</code> 是逐快照的量，因此刻意在任何地方都 不作为模块常量出现。</p>
+<h2 id="结果">结果</h2>
+<p><code>compute_hi_mass</code> 返回一个 <code>HiMassResult</code>：</p>
+<table>
+<thead>
+<tr>
+<th>属性</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>m_hi</code>, <code>m_h2</code></td>
+<td>逐单元质量，<strong>长度完整</strong> — 被模型排除的单元取零，而不会返回更短的数组</td>
+</tr>
+<tr>
+<td><code>m_neutral</code></td>
+<td><code>m_hi + m_h2</code>，恰好就是中性氢质量</td>
+</tr>
+<tr>
+<td><code>f_mol</code>, <code>f_neutral</code></td>
+<td>逐单元的比例</td>
+</tr>
+<tr>
+<td><code>u_mw</code></td>
+<td>逐单元 UV 场（体密度模型）</td>
+</tr>
+<tr>
+<td><code>diagnostics</code></td>
+<td>UV 模式、投影几何、对齐情况、<code>f_gas_in_map</code></td>
+</tr>
+<tr>
+<td><code>cells</code></td>
+<td>底层的 <code>Cells</code> 表</td>
+</tr>
+</tbody>
+</table>
+<h2 id="投影模型与落在框外的气体">投影模型与落在框外的气体</h2>
+<p>投影模型会构建一张面向观测者的投影图，边长为 <code>L = 2 * max(2 R_half,gas, 6 R_half,*, 30 kpc)</code>，并从中读出每个单元的分子 比例。落在该框外的单元得到<strong>零</strong> HI 和 H2：模型的 “星系”*就是*投影框本身，因此该方法在星表中的总量 就是框内总量。</p>
+<p>落在框内的气体质量比例会报告为 <code>f_gas_in_map</code>； 当它低于 0.9 时 <code>TNGSource</code> 会打印警告。若要改为保留框外的气体， 可以把它夹到边缘像素上：</p>
+<pre><code class="language-python">cfg = HIModelConfig(h=0.6774, z=0.0, map_clip_outside=True)</code></pre>
+<p>这样能守恒质量，代价是把气体堆在边界上。</p>
+<h2 id="配置">配置</h2>
+<p><code>HIModelConfig</code> 是一个冻结（frozen）数据类；<code>HIModelConfig.build(dict_or_config, h=..., z=...)</code> 会把用户设置与快照头中的取值对照解析，其中 <code>h</code>、<code>z</code> 和盒子尺寸始终取自快照。</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>默认值</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ngrid</code></td>
+<td>128</td>
+<td>三维 FFT UV 网格的边长</td>
+</tr>
+<tr>
+<td><code>f_esc</code></td>
+<td>0.1</td>
+<td>UV 逃逸分数（Diemer+2018 §4.2）</td>
+</tr>
+<tr>
+<td><code>box_expand</code></td>
+<td>1.1</td>
+<td>自适应 UV 盒子 = 该值 × 气体坐标范围</td>
+</tr>
+<tr>
+<td><code>ngrid_map</code></td>
+<td>128</td>
+<td>二维投影网格的边长</td>
+</tr>
+<tr>
+<td><code>vol_fine_grid</code></td>
+<td>0.0</td>
+<td>第二层更高分辨率的 UV 盒子（论文附录 A.2）；默认关闭</td>
+</tr>
+<tr>
+<td><code>r_soft_map_mode</code></td>
+<td><code>'dx'</code></td>
+<td>二维核的软化长度取自何处</td>
+</tr>
+<tr>
+<td><code>map_clip_outside</code></td>
+<td><code>False</code></td>
+<td>保留投影框外的气体（质量守恒）</td>
+</tr>
+<tr>
+<td><code>k13_variant</code></td>
+<td><code>'2p'</code></td>
+<td>投影 K13 模型中由哪种方案给出 <code>n_CNM</code></td>
+</tr>
+<tr>
+<td><code>rho_dm_mode</code></td>
+<td><code>'none'</code></td>
+<td>投影 K13 所需的暗物质中面密度</td>
+</tr>
+</tbody>
+</table>
+<p>完整列表以及每个默认值背后的理由见该类的文档字符串。</p>
+<h2 id="uv_mode"><code>uv_mode</code></h2>
+<p>体密度模型的 UV 场有两个来源：对恒星形成分布的逐星系 FFT 卷积 （<code>uv_mode='adaptive_fft'</code>，默认值）， 或者均匀的 Faucher-Giguère+2011 背景（<code>uv_mode='global'</code>）。两者都把 背景作为下限，因此 <code>'global'</code> 就是没有恒星形成的星系在 <code>'adaptive_fft'</code> 下的极限。</p>
+<p>投影模型的 UV 场由 SFR 图导出 — 这是方法定义的一部分 — 因此 <code>uv_mode</code> 对它们不适用，把 <code>'global'</code> 与 <code>*_map</code> 模型一起传入会抛出异常。</p>
+<blockquote>
+<p><strong>v0.3.0 中的变更。</strong> 默认值原本是 <code>'global'</code>，而 <code>'adaptive_fft'</code> 与它 完全等价：构建插值器时把某一个轴的边界数组 复用到了全部三个轴上，于是几乎每个粒子都落在其范围之外， <code>fill_value=0.0</code> 返回零，只剩下背景。现在的默认值 是 <code>'adaptive_fft'</code>，名副其实。</p>
+</blockquote>
+<h2 id="验证">验证</h2>
+<p>物理表达式是从 <code>TNGHIcalc</code> 逐字移植过来的，后者已 与 Diemer+2018 的参考实现逐位（bit-for-bit）验证一致 （<code>TNGHI_GD14_model/gd14_model.py</code>）— 证据链和复现命令 见 <a href="zh/verification.html">验证记录</a>。</p>
+<footer>astrovodka &mdash; mock resolved HI observations of IllustrisTNG galaxies.
+Generated from the Markdown sources by <code>docs/build_html.py</code>.</footer>
+</div>
+</body>
+</html>

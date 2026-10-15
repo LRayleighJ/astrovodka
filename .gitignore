@@ -1,25 +1,52 @@
-# Python cache
+# ---- Python ----
 __pycache__/
-*.pyc
-*.pyo
+*.py[cod]
+*$py.class
+*.so
 
-# Package metadata (auto-generated)
-*.egg-info/
-dist/
+# ---- Build / packaging ----
 build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
 
-# Example outputs (large files)
-examples/examplefiles/*.fits
-examples/examplefiles/*.hdf5
-examples/examplefiles/*.png
+# ---- Test / coverage ----
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
 
-# Jupyter checkpoints
+# ---- Environment managers ----
+.venv/
+venv/
+env/
+.conda/
+
+# ---- Example and tutorial outputs ----
+# Everything the examples write lands in examples/outputs/ and is not tracked.
+examples/outputs/
+*.fits
+*.hdf5
+*.h5
+
+# ---- Jupyter ----
 .ipynb_checkpoints/
+*.nbconvert.ipynb
 
-# IDE
+# ---- Editors ----
 .vscode/
 .idea/
+*.swp
+*~
 
-# OS
+# ---- OS ----
 .DS_Store
 Thumbs.db
+
+# ---- Cluster filesystems ----
+# NFS "silly rename" files: a deleted file still held open by a running
+# process reappears under this name on NFS mounts.
+.nfs*

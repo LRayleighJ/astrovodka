@@ -1,8 +1,8 @@
 """
 Create mock observations of HI sources from cosmological hydrodynamical simulations.
 
-Provides :class:`~martini.martini.Martini`, the main class of the package, and a
-simplified :class:`~martini.martini.GlobalProfile` class for use when only a spectrum (no
+Provides :class:`~astrovodka.martini.Martini`, the main class of the package, and a
+simplified :class:`~astrovodka.martini.GlobalProfile` class for use when only a spectrum (no
 spatial information) is desired.
 """
 
@@ -39,38 +39,38 @@ class _BaseMartini:
     Parameters
     ----------
     source : SPHSource
-        An instance of a class derived from :class:`martini.sources.SPHSource`.
+        An instance of a class derived from :class:`astrovodka.sources.SPHSource`.
         A description of the HI emitting object, including position, geometry
         and an interface to the simulation data (SPH particle masses,
         positions, etc.). See :doc:`sub-module documentation </sources/index>`.
 
-    datacube : ~martini.datacube.DataCube
-        A :class:`~martini.datacube.DataCube` instance.
+    datacube : ~astrovodka.datacube.DataCube
+        A :class:`~astrovodka.datacube.DataCube` instance.
         A description of the datacube to create, including pixels, channels,
         sky position. See :doc:`sub-module documentation </datacube/index>`.
 
     beam : _BaseBeam, optional
-        An instance of a class derived from `~martini.beams._BaseBeam`.
+        An instance of a class derived from `~astrovodka.beams._BaseBeam`.
         A description of the beam for the simulated telescope. Given a
         description, either mathematical or as an image, the creation of a
         custom beam is straightforward. See
         :doc:`sub-module documentation </beams/index>`.
 
     noise : _BaseNoise, optional
-        An instance of a class derived from :class:`~martini.noise._BaseNoise`.
+        An instance of a class derived from :class:`~astrovodka.noise._BaseNoise`.
         A description of the simulated noise. A simple Gaussian noise model is
         provided; implementation of other noise models is straightforward. See
         :doc:`sub-module documentation </noise/index>`.
 
     sph_kernel : _BaseSPHKernel
-        An instance of a class derived from :class:`~martini.sph_kernels._BaseSPHKernel`.
+        An instance of a class derived from :class:`~astrovodka.sph_kernels._BaseSPHKernel`.
         A description of the SPH smoothing kernel. Check simulation
         documentation for the kernel used in a particular simulation, and
         :doc:`SPH kernel sub-module documentation </sph_kernels/index>` for guidance.
 
     spectral_model : _BaseSpectrum
         An instance of a class derived from
-        :class:`~martini.spectral_models._BaseSpectrum`.
+        :class:`~astrovodka.spectral_models._BaseSpectrum`.
         A description of the HI line produced by a particle of given
         properties. A Dirac-delta spectrum, and both fixed-width and
         temperature-dependent Gaussian line models are provided; implementing
@@ -81,18 +81,18 @@ class _BaseMartini:
         If ``True``, suppress output to stdout.
 
     _prune_kwargs : dict
-        Arguments to pass through to the :meth:`martini.martini.Martini._prune_particles`
+        Arguments to pass through to the :meth:`astrovodka.martini.Martini._prune_particles`
         function, intended for internal use only.
 
     See Also
     --------
-    martini.sources.sph_source.SPHSource
-    martini.datacube.DataCube
-    martini.beams
-    martini.noise
-    martini.sph_kernels
-    martini.spectral_models
-    martini.martini.GlobalProfile
+    astrovodka.sources.sph_source.SPHSource
+    astrovodka.datacube.DataCube
+    astrovodka.beams
+    astrovodka.noise
+    astrovodka.sph_kernels
+    astrovodka.spectral_models
+    astrovodka.martini.GlobalProfile
     """
 
     source: SPHSource
@@ -142,7 +142,7 @@ class _BaseMartini:
         """
         Explicitly trigger evaluation of particle spectra.
 
-        Triggered when :meth:`~martini.martini.Martini.insert_source_in_cube` is called if
+        Triggered when :meth:`~astrovodka.martini.Martini.insert_source_in_cube` is called if
         not called explicitly before this.
         """
         if not self.quiet:
@@ -278,7 +278,7 @@ class _BaseMartini:
         quiet: bool | None = None,
     ) -> None:
         """
-        Populate the :class:`~martini.datacube.DataCube` with flux from source particles.
+        Populate the :class:`~astrovodka.datacube.DataCube` with flux from source particles.
 
         Parameters
         ----------
@@ -291,7 +291,7 @@ class _BaseMartini:
             of accuracy!) by setting this parameter True.
 
         progressbar : bool, optional
-            A progress bar is shown by default. If martini was initialised with
+            A progress bar is shown by default. If astrovodka was initialised with
             `quiet` set to `True`, progress bars are switched off unless explicitly
             turned on.
 
@@ -367,7 +367,7 @@ class _BaseMartini:
         inserted_mass = (
             2.36e5
             * U.Msun
-            * self.source.distance.to_value(U.Mpc) ** 2
+            * self.source.luminosity_distance.to_value(U.Mpc) ** 2
             * np.sum(
                 (self._datacube._array[pad_mask] * self._datacube.px_size**2)
                 .sum((0, 1))
@@ -382,7 +382,8 @@ class _BaseMartini:
             print(
                 "Source inserted.",
                 f"  Flux density in cube: {inserted_flux_density:.2e}",
-                f"  Mass in cube (assuming distance {self.source.distance:.2f} and a"
+                f"  Mass in cube (assuming distance"
+                f" {self.source.luminosity_distance:.2f} and a"
                 f" spatially resolved source):"
                 f" {inserted_mass:.2e}",
                 f"    [{inserted_mass / self.source.input_mass * 100 << 1:.0f}%"
@@ -395,7 +396,7 @@ class _BaseMartini:
         return
 
     def reset(self) -> None:
-        """Re-initialize the :class:`~martini.datacube.DataCube` with zero-values."""
+        """Re-initialize the :class:`~astrovodka.datacube.DataCube` with zero-values."""
         init_kwargs = {
             "n_px_x": self._datacube.n_px_x,
             "n_px_y": self._datacube.n_px_y,
@@ -406,6 +407,11 @@ class _BaseMartini:
             "ra": self._datacube.ra,
             "dec": self._datacube.dec,
             "stokes_axis": self._datacube.stokes_axis,
+            "coordinate_frame": self._datacube.coordinate_frame,
+            "specsys": self._datacube.specsys,
+            # Without this the cube would be rebuilt in the default spectral unit
+            # rather than the one it was created with.
+            "spectral_unit": self._datacube._spectral_unit,
         }
         self._datacube = DataCube(**init_kwargs)
         if self.beam is not None:
@@ -505,8 +511,11 @@ class _BaseMartini:
         dz_cube = 0.5 * (self._datacube.px_size * self._datacube.n_px_y).to_value(
             U.deg
         )  # half-length
-        dv_cube = 0.5 * (
-            self._datacube.channel_width * self._datacube.n_channels
+        # Use the channel edges rather than channel_width, which is stored in whatever
+        # unit the spectral axis uses (frequency for a "MHz" cube).
+        dv_cube = 0.5 * np.abs(
+            self._datacube.velocity_channel_edges[-1]
+            - self._datacube.velocity_channel_edges[0]
         ).to_value(U.km / U.s)
         if dy_cube > 5:
             warn("DataCube RA range > 5deg, preview is very approximate!")
@@ -616,51 +625,51 @@ class Martini(_BaseMartini):
     """
     Creates synthetic HI data cubes from simulation data.
 
-    Usual use of martini involves first creating instances of classes from each
+    Usual use of astrovodka involves first creating instances of classes from each
     of the required and optional sub-modules, then creating a
-    :class:`~martini.martini.Martini` with these instances as arguments. The object can
+    :class:`~astrovodka.martini.Martini` with these instances as arguments. The object can
     then be used to create synthetic observations, usually by calling
-    :meth:`~martini.martini.Martini.insert_source_in_cube`,
-    (optionally) :meth:`~martini.martini.Martini.add_noise`, (optionally)
-    :meth:`~martini.martini.Martini.convolve_beam` and
-    :meth:`~martini.martini.Martini.write_fits` in order.
+    :meth:`~astrovodka.martini.Martini.insert_source_in_cube`,
+    (optionally) :meth:`~astrovodka.martini.Martini.add_noise`, (optionally)
+    :meth:`~astrovodka.martini.Martini.convolve_beam` and
+    :meth:`~astrovodka.martini.Martini.write_fits` in order.
 
     Parameters
     ----------
     source : SPHSource
         An instance of a class derived from
-        :class:`~martini.sources.sph_source.SPHSource`.
+        :class:`~astrovodka.sources.sph_source.SPHSource`.
         A description of the HI emitting object, including position, geometry
         and an interface to the simulation data (SPH particle masses,
         positions, etc.). See :doc:`sub-module documentation </sources/index>`.
 
-    datacube : ~martini.datacube.DataCube
-        A :class:`~martini.datacube.DataCube` instance.
+    datacube : ~astrovodka.datacube.DataCube
+        A :class:`~astrovodka.datacube.DataCube` instance.
         A description of the datacube to create, including pixels, channels,
         sky position. See :doc:`sub-module documentation </datacube/index>`.
 
     beam : _BaseBeam, optional
-        An instance of a class derived from `~martini.beams._BaseBeam`.
+        An instance of a class derived from `~astrovodka.beams._BaseBeam`.
         A description of the beam for the simulated telescope. Given a
         description, either mathematical or as an image, the creation of a
         custom beam is straightforward. See
         :doc:`sub-module documentation </beams/index>`.
 
     noise : _BaseNoise, optional
-        An instance of a class derived from :class:`~martini.noise._BaseNoise`.
+        An instance of a class derived from :class:`~astrovodka.noise._BaseNoise`.
         A description of the simulated noise. A simple Gaussian noise model is
         provided; implementation of other noise models is straightforward. See
         :doc:`sub-module documentation </noise/index>`.
 
     sph_kernel : _BaseSPHKernel
-        An instance of a class derived from :class:`~martini.sph_kernels._BaseSPHKernel`.
+        An instance of a class derived from :class:`~astrovodka.sph_kernels._BaseSPHKernel`.
         A description of the SPH smoothing kernel. Check simulation
         documentation for the kernel used in a particular simulation, and
         :doc:`SPH kernel sub-module documentation </sph_kernels/index>` for guidance.
 
     spectral_model : _BaseSpectrum
         An instance of a class derived from
-        :class:`~martini.spectral_models._BaseSpectrum`.
+        :class:`~astrovodka.spectral_models._BaseSpectrum`.
         A description of the HI line produced by a particle of given
         properties. A Dirac-delta spectrum, and both fixed-width and
         temperature-dependent Gaussian line models are provided; implementing
@@ -672,13 +681,13 @@ class Martini(_BaseMartini):
 
     See Also
     --------
-    martini.sources.sph_source.SPHSource
-    martini.datacube.DataCube
-    martini.beams
-    martini.noise
-    martini.sph_kernels
-    martini.spectral_models
-    martini.martini.GlobalProfile
+    astrovodka.sources.sph_source.SPHSource
+    astrovodka.datacube.DataCube
+    astrovodka.beams
+    astrovodka.noise
+    astrovodka.sph_kernels
+    astrovodka.spectral_models
+    astrovodka.martini.GlobalProfile
 
     Examples
     --------
@@ -686,8 +695,14 @@ class Martini(_BaseMartini):
     distribution of the package.
 
     The following example illustrates basic use of MARTINI, using a (very!)
-    crude model of a gas disk. This example can be run by doing
-    'from martini import demo; demo()'::
+    crude model of a gas disk.
+
+    .. note::
+        Upstream MARTINI ships this as ``from martini import demo; demo()``.
+        astrovodka has no ``demo`` (and no dependency on ``astromartini``);
+        use the runnable examples instead, e.g.::
+
+            python examples/astrovodka_demo.py
 
         # ------make a toy galaxy----------
         N = 500
@@ -802,13 +817,13 @@ class Martini(_BaseMartini):
     @property
     def datacube(self) -> DataCube:
         """
-        The :class:`~martini.datacube.DataCube` object for this mock observation.
+        The :class:`~astrovodka.datacube.DataCube` object for this mock observation.
 
         Returns
         -------
-        ~martini.datacube.DataCube
-            The :class:`~martini.datacube.DataCube` contained by this
-            :class:`~martini.martini.Martini` instance.
+        ~astrovodka.datacube.DataCube
+            The :class:`~astrovodka.datacube.DataCube` contained by this
+            :class:`~astrovodka.martini.Martini` instance.
         """
         return self._datacube
 
@@ -824,7 +839,7 @@ class Martini(_BaseMartini):
         Parameters
         ----------
         skip_validation : bool, optional
-            SPH kernel interpolation onto the :class:`~martini.datacube.DataCube`
+            SPH kernel interpolation onto the :class:`~astrovodka.datacube.DataCube`
             is approximated for increased speed. For some combinations of pixel size,
             distance and SPH smoothing length, the approximation may break down. The
             kernel class will check whether this will occur and raise a
@@ -833,7 +848,7 @@ class Martini(_BaseMartini):
 
         progressbar : bool, optional
             A progress bar is shown by default. Progress bars work, with perhaps
-            some visual glitches, in parallel. If :class:`~martini.martini.Martini` was
+            some visual glitches, in parallel. If :class:`~astrovodka.martini.Martini` was
             initialised with ``quiet`` set to ``True``, progress bars are switched off
             unless explicitly turned on.
 
@@ -861,7 +876,7 @@ class Martini(_BaseMartini):
             raise ValueError(
                 "datacube padding insufficient for beam convolution (perhaps you loaded a"
                 " datacube state with datacube.load_state that was previously initialized"
-                " by martini with a smaller beam?)"
+                " by astrovodka with a smaller beam?)"
             )
 
         unit = self._datacube._array.unit
@@ -949,7 +964,7 @@ class Martini(_BaseMartini):
 
         channels : str, deprecated
             Deprecated, channels and their units now fixed at
-            :class:`~martini.datacube.DataCube` initialization.
+            :class:`~astrovodka.datacube.DataCube` initialization.
 
         dtype : str or dtype
             Typecode or data-type to which the array is cast. Should be supported
@@ -1052,7 +1067,7 @@ class Martini(_BaseMartini):
         Output the beam to a FITS-format file.
 
         The beam is written to file, with pixel sizes, coordinate system, etc.
-        similar to those used for the :class:`~martini.datacube.DataCube`.
+        similar to those used for the :class:`~astrovodka.datacube.DataCube`.
 
         Parameters
         ----------
@@ -1065,12 +1080,12 @@ class Martini(_BaseMartini):
 
         channels : str, deprecated
             Deprecated, channels and their units now fixed at
-            :class:`~martini.datacube.DataCube` initialization.
+            :class:`~astrovodka.datacube.DataCube` initialization.
 
         Raises
         ------
         ValueError
-            If :class:`~martini.martini.Martini` was initialized without a ``beam``.
+            If :class:`~astrovodka.martini.Martini` was initialized without a ``beam``.
         """
         if channels is not None:  # pragma: no cover
             warnings.warn(
@@ -1172,7 +1187,7 @@ class Martini(_BaseMartini):
 
         channels : str, deprecated
             Deprecated, channels and their units now fixed at
-            :class:`~martini.datacube.DataCube` initialization.
+            :class:`~astrovodka.datacube.DataCube` initialization.
         """
         if channels is not None:  # pragma: no cover
             warnings.warn(
@@ -1358,7 +1373,7 @@ class GlobalProfile(_BaseMartini):
     """
     Just produce a global spectrum of an HI source.
 
-    A simplified version of the main :class:`~martini.martini.Martini` class for those
+    A simplified version of the main :class:`~astrovodka.martini.Martini` class for those
     times when you just want a spectrum.
 
     Sometimes only the spatially integrated spectrum of a source is wanted, which makes
@@ -1366,14 +1381,14 @@ class GlobalProfile(_BaseMartini):
     process of producing a spatially-integrated spectrum, or "global profile", with some
     specific assumptions:
 
-     - The :class:`~martini.martini.GlobalProfile` class does not assume any spatial
+     - The :class:`~astrovodka.martini.GlobalProfile` class does not assume any spatial
        aperture, instead every particle in the source contributes to the spectrum (unless
        it falls outside of the spectral bandwidth).
      - The positions of particles are still used to calculate the line-of-sight vector
        and the velocity along this direction.
 
     There is therefore no need or way to specify a beam or SPH kernel as with the main
-    :class:`~martini.martini.Martini` class. It is also not possible to use MARTINI's
+    :class:`~astrovodka.martini.Martini` class. It is also not possible to use MARTINI's
     noise modules with this class. If these restrictions are found to be too limiting
     (for example, if the spectrum within a spatial mask defined by a signal-to-noise or
     other cut is desired), the best course of action is to produce a spatially-resolved
@@ -1383,16 +1398,16 @@ class GlobalProfile(_BaseMartini):
 
     Parameters
     ----------
-    source : ~martini.sources.sph_source.SPHSource
+    source : ~astrovodka.sources.sph_source.SPHSource
         An instance of a class derived from
-        :class:`~martini.sources.sph_source.SPHSource`.
+        :class:`~astrovodka.sources.sph_source.SPHSource`.
         A description of the HI emitting object, including position, geometry
         and an interface to the simulation data (SPH particle masses,
         positions, etc.). See :doc:`sub-module documentation </sources/index>`.
 
-    spectral_model : ~martini.spectral_models._BaseSpectrum
+    spectral_model : ~astrovodka.spectral_models._BaseSpectrum
         An instance of a class derived from
-        :class:`~martini.spectral_models._BaseSpectrum`.
+        :class:`~astrovodka.spectral_models._BaseSpectrum`.
         A description of the HI line produced by a particle of given
         properties. A Dirac-delta spectrum, and both fixed-width and
         temperature-dependent Gaussian line models are provided; implementing
@@ -1417,13 +1432,13 @@ class GlobalProfile(_BaseMartini):
 
     channels : str, deprecated
         Deprecated, channels and their units now fixed at
-        :class:`~martini.datacube.DataCube` initialization.
+        :class:`~astrovodka.datacube.DataCube` initialization.
 
     See Also
     --------
-    martini.sources.sph_source.SPHSource
-    martini.spectral_models
-    martini.martini.Martini
+    astrovodka.sources.sph_source.SPHSource
+    astrovodka.spectral_models
+    astrovodka.martini.Martini
 
     Examples
     --------
@@ -1538,9 +1553,9 @@ class GlobalProfile(_BaseMartini):
 
     def insert_source_in_spectrum(self) -> None:
         """
-        Populate the :class:`~martini.datacube.DataCube` with flux from source particles.
+        Populate the :class:`~astrovodka.datacube.DataCube` with flux from source particles.
 
-        For the :class:`~martini.martini.GlobalProfile` class we assume that every
+        For the :class:`~astrovodka.martini.GlobalProfile` class we assume that every
         particle in the source contributes (if it falls in the spectral bandwidth)
         regardless of  position on the sky. The line-of-sight vector still depends on
         the particle positions, so the direction to the individual particles is still
@@ -1569,14 +1584,20 @@ class GlobalProfile(_BaseMartini):
             inserted_mass = (
                 2.36e5
                 * U.Msun
-                * self.source.distance.to_value(U.Mpc) ** 2
+                * self.source.luminosity_distance.to_value(U.Mpc) ** 2
                 * inserted_flux_density.to_value(U.Jy)
-                * self._datacube.channel_width.to_value(U.km / U.s)
+                # from the channel edges, since channel_width is stored in whatever
+                # unit the spectral axis uses (frequency for a "MHz" cube)
+                * np.abs(
+                    self._datacube.velocity_channel_edges[1]
+                    - self._datacube.velocity_channel_edges[0]
+                ).to_value(U.km / U.s)
             )
             print(
                 "Source inserted.",
                 f"  Flux density in spectrum: {inserted_flux_density:.2e}",
-                f"  Mass in spectrum (assuming distance {self.source.distance:.2f}):"
+                f"  Mass in spectrum (assuming distance"
+                f" {self.source.luminosity_distance:.2f}):"
                 f" {inserted_mass:.2e}",
                 f"    [{inserted_mass / self.source.input_mass * 100:.0f}%"
                 f" of initial source mass]",
@@ -1611,15 +1632,15 @@ class GlobalProfile(_BaseMartini):
         ~astropy.units.Quantity
             :class:`~astropy.units.Quantity` with dimensions of frequency or velocity.
             Edges of the channels with units depending on
-            :class:`~martini.martini.GlobalProfile`'s native channel spacing.
+            :class:`~astrovodka.martini.GlobalProfile`'s native channel spacing.
 
         See Also
         --------
-        martini.martini.GlobalProfile.channel_mids
-        martini.martini.GlobalProfile.velocity_channel_mids
-        martini.martini.GlobalProfile.velocity_channel_edges
-        martini.martini.GlobalProfile.frequency_channel_mids
-        martini.martini.GlobalProfile.frequency_channel_edges
+        astrovodka.martini.GlobalProfile.channel_mids
+        astrovodka.martini.GlobalProfile.velocity_channel_mids
+        astrovodka.martini.GlobalProfile.velocity_channel_edges
+        astrovodka.martini.GlobalProfile.frequency_channel_mids
+        astrovodka.martini.GlobalProfile.frequency_channel_edges
         """
         return self._datacube.channel_edges
 
@@ -1633,15 +1654,15 @@ class GlobalProfile(_BaseMartini):
         ~astropy.units.Quantity
             :class:`~astropy.units.Quantity` with dimensions of frequency or velocity.
             Edges of the channels with units depending on
-            :class:`~martini.martini.GlobalProfile`'s native channel spacing.
+            :class:`~astrovodka.martini.GlobalProfile`'s native channel spacing.
 
         See Also
         --------
-        martini.martini.GlobalProfile.channel_edges
-        martini.martini.GlobalProfile.velocity_channel_mids
-        martini.martini.GlobalProfile.velocity_channel_edges
-        martini.martini.GlobalProfile.frequency_channel_mids
-        martini.martini.GlobalProfile.frequency_channel_edges
+        astrovodka.martini.GlobalProfile.channel_edges
+        astrovodka.martini.GlobalProfile.velocity_channel_mids
+        astrovodka.martini.GlobalProfile.velocity_channel_edges
+        astrovodka.martini.GlobalProfile.frequency_channel_mids
+        astrovodka.martini.GlobalProfile.frequency_channel_edges
         """
         return self._datacube.channel_mids
 
@@ -1658,9 +1679,9 @@ class GlobalProfile(_BaseMartini):
 
         See Also
         --------
-        martini.martini.GlobalProfile.velocity_channel_mids
-        martini.martini.GlobalProfile.velocity_channel_edges
-        martini.martini.GlobalProfile.frequency_channel_mids
+        astrovodka.martini.GlobalProfile.velocity_channel_mids
+        astrovodka.martini.GlobalProfile.velocity_channel_edges
+        astrovodka.martini.GlobalProfile.frequency_channel_mids
         """
         return self._datacube.channel_edges
 
@@ -1677,9 +1698,9 @@ class GlobalProfile(_BaseMartini):
 
         See Also
         --------
-        martini.martini.GlobalProfile.velocity_channel_mids
-        martini.martini.GlobalProfile.velocity_channel_edges
-        martini.martini.GlobalProfile.frequency_channel_edges
+        astrovodka.martini.GlobalProfile.velocity_channel_mids
+        astrovodka.martini.GlobalProfile.velocity_channel_edges
+        astrovodka.martini.GlobalProfile.frequency_channel_edges
         """
         return self._datacube.channel_mids
 
@@ -1696,9 +1717,9 @@ class GlobalProfile(_BaseMartini):
 
         See Also
         --------
-        martini.martini.GlobalProfile.velocity_channel_mids
-        martini.martini.GlobalProfile.frequency_channel_mids
-        martini.martini.GlobalProfile.frequency_channel_edges
+        astrovodka.martini.GlobalProfile.velocity_channel_mids
+        astrovodka.martini.GlobalProfile.frequency_channel_mids
+        astrovodka.martini.GlobalProfile.frequency_channel_edges
         """
         return self._datacube.channel_edges
 
@@ -1715,9 +1736,9 @@ class GlobalProfile(_BaseMartini):
 
         See Also
         --------
-        martini.martini.GlobalProfile.velocity_channel_edges
-        martini.martini.GlobalProfile.frequency_channel_mids
-        martini.martini.GlobalProfile.frequency_channel_edges
+        astrovodka.martini.GlobalProfile.velocity_channel_edges
+        astrovodka.martini.GlobalProfile.frequency_channel_mids
+        astrovodka.martini.GlobalProfile.frequency_channel_edges
         """
         return self._datacube.channel_mids
 
@@ -1731,7 +1752,7 @@ class GlobalProfile(_BaseMartini):
         ~astropy.units.Quantity
             :class:`~astropy.units.Quantity` with dimentions of frequency or velocity.
             Width of the channels with units depending on
-            :class:`~martini.martini.GlobalProfile`'s ``channels`` argument.
+            :class:`~astrovodka.martini.GlobalProfile`'s ``channels`` argument.
         """
         return self._datacube.channel_width
 

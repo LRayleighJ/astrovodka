@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>astrovodka.martini — 核心流水线</title>
+<style>
+:root{--fg:#1c1e21;--muted:#5c6570;--link:#0b62c4;--rule:#d8dee6;--bg:#fff;
+--code-bg:#f4f6f8;--note-bg:#eef4fb;--head:#12395e}
+@media (prefers-color-scheme:dark){:root{--fg:#e6e8eb;--muted:#9aa5b1;--link:#69a8f5;
+--rule:#39404a;--bg:#15181c;--code-bg:#1e2227;--note-bg:#1b2733;--head:#9cc6f0}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);line-height:1.65;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",
+"Noto Sans CJK SC","Noto Sans CJK JP","PingFang SC","Microsoft YaHei",sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:2rem 1.25rem 4rem}
+nav.lang{font-size:.85rem;color:var(--muted);margin-bottom:2rem;
+display:flex;gap:1rem;flex-wrap:wrap;align-items:center}
+nav.lang a{color:var(--link);text-decoration:none}
+nav.lang a:hover{text-decoration:underline}
+h1,h2,h3,h4,h5,h6{color:var(--head);line-height:1.3;margin:2rem 0 .75rem}
+h1{font-size:1.9rem;border-bottom:2px solid var(--rule);padding-bottom:.4rem}
+h2{font-size:1.45rem;border-bottom:1px solid var(--rule);padding-bottom:.3rem}
+h3{font-size:1.15rem}h4{font-size:1rem}
+a{color:var(--link)}
+p,li{margin:.5rem 0}
+code{background:var(--code-bg);padding:.12em .38em;border-radius:4px;
+font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em}
+pre{background:var(--code-bg);padding:1rem;border-radius:8px;overflow-x:auto;
+border:1px solid var(--rule)}
+pre code{background:none;padding:0;font-size:.86rem;line-height:1.5}
+table{border-collapse:collapse;width:100%;margin:1rem 0;display:block;overflow-x:auto}
+th,td{border:1px solid var(--rule);padding:.45rem .7rem;text-align:left;
+vertical-align:top;font-size:.92rem}
+th{background:var(--code-bg);font-weight:600}
+blockquote{margin:1rem 0;padding:.6rem 1rem;border-left:4px solid var(--link);
+background:var(--note-bg);border-radius:0 6px 6px 0}
+blockquote p{margin:.3rem 0}
+hr{border:0;border-top:1px solid var(--rule);margin:2.5rem 0}
+footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--rule);
+color:var(--muted);font-size:.82rem}
+.idx{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.6rem;
+margin:1.5rem 0}
+.idx a{display:block;padding:.7rem .9rem;border:1px solid var(--rule);border-radius:8px;
+text-decoration:none;background:var(--code-bg)}
+.idx a:hover{border-color:var(--link)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="lang"><a href="../../index.html">astrovodka documentation</a><a href="../../en/index.html">English</a></nav>
+<h1 id="astrovodkamartini--核心流水线">astrovodka.martini — 核心流水线</h1>
+<p><code>Martini</code> 类负责编排模拟观测流水线，把 source、DataCube、beam、noise、spectral model 与 SPH kernel 串联起来。</p>
+<h2 id="martini">Martini</h2>
+<h3 id="__init__self--source-datacube-beamnone-noisenone-sph_kernel-spectral_model-quietfalse"><code>__init__(self, *, source, datacube, beam=None, noise=None, sph_kernel, spectral_model, quiet=False)</code></h3>
+<p><strong>参数：</strong></p>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>source</code></td>
+<td><code>SPHSource</code></td>
+<td>发射 HI 的源对象（必需）</td>
+</tr>
+<tr>
+<td><code>datacube</code></td>
+<td><code>DataCube</code></td>
+<td>数据立方体的网格定义（必需）</td>
+</tr>
+<tr>
+<td><code>beam</code></td>
+<td>`_BaseBeam \</td>
+<td>None`</td>
+<td>望远镜波束。<code>None</code> 表示跳过卷积（默认：None）</td>
+</tr>
+<tr>
+<td><code>noise</code></td>
+<td>`_BaseNoise \</td>
+<td>None`</td>
+<td>噪声模型。<code>None</code> 表示跳过加噪（默认：None）</td>
+</tr>
+<tr>
+<td><code>sph_kernel</code></td>
+<td><code>_BaseSPHKernel</code></td>
+<td>SPH 平滑核（必需）</td>
+</tr>
+<tr>
+<td><code>spectral_model</code></td>
+<td><code>_BaseSpectrum</code></td>
+<td>21-cm 谱线模型（必需）</td>
+</tr>
+<tr>
+<td><code>quiet</code></td>
+<td><code>bool</code></td>
+<td>抑制标准输出（默认：False）</td>
+</tr>
+</tbody>
+</table>
+<p><strong>返回值：</strong> None</p>
+<blockquote>
+<p><strong>说明：</strong></p>
+<ul>
+<li>所有参数均为仅关键字参数（keyword-only）。</li>
+<li>初始化过程中会裁剪粒子（按空间、按光谱、按质量），以跳过不贡献信号的粒子。</li>
+<li><code>DataCube._array</code> 的单位会随流程变化：插入源之后为 <code>Jy/pix²</code> → 卷积之后为 <code>Jy/beam</code>。</li>
+</ul>
+</blockquote>
+<hr>
+<h3 id="insert_source_in_cubeself-skip_validationfalse-progressbarnone-ncpu1"><code>insert_source_in_cube(self, skip_validation=False, progressbar=None, ncpu=1)</code></h3>
+<p><strong>参数：</strong></p>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>skip_validation</code></td>
+<td><code>bool</code></td>
+<td>跳过 SPH 核精度校验（默认：False）</td>
+</tr>
+<tr>
+<td><code>progressbar</code></td>
+<td>`bool \</td>
+<td>None`</td>
+<td>是否显示 tqdm 进度条。<code>None</code> 表示自动判断</td>
+</tr>
+<tr>
+<td><code>ncpu</code></td>
+<td><code>int</code></td>
+<td>并行进程数。需要 <code>multiprocess</code>（默认：1）</td>
+</tr>
+</tbody>
+</table>
+<p><strong>返回值：</strong> None</p>
+<blockquote>
+<p><strong>说明：</strong></p>
+<ul>
+<li>这是开销最大的一步 — 每个像素都要遍历附近的粒子。</li>
+<li>并行使用 <code>multiprocess</code>（dill），而不是 <code>multiprocessing</code>（pickle）。</li>
+<li>并行粒度是逐像素的：每个 worker 独立处理一个像素。</li>
+<li>会报告质量守恒情况：由流量累加得到的质量与输入 HI 质量之差应在约 1% 以内。</li>
+</ul>
+</blockquote>
+<hr>
+<h3 id="convolve_beamself"><code>convolve_beam(self)</code></h3>
+<p><strong>返回值：</strong> None</p>
+<blockquote>
+<p><strong>说明：</strong></p>
+<ul>
+<li>要求已设置 <code>beam</code>。若为 None 则给出警告并跳过。</li>
+<li>使用 <code>scipy.signal.fftconvolve</code> 做基于 FFT 的卷积。</li>
+<li>卷积后会移除填充区；数组单位变为 <code>Jy/beam</code>。</li>
+</ul>
+</blockquote>
+<hr>
+<h3 id="add_noiseself"><code>add_noise(self)</code></h3>
+<p><strong>返回值：</strong> None</p>
+<blockquote>
+<p><strong>说明：</strong></p>
+<ul>
+<li>要求同时设置 <code>beam</code> 和 <code>noise</code>。否则给出警告并跳过。</li>
+<li>噪声在卷积<strong>之前</strong>加入。RMS 会自动缩放：<code>rms_pre = rms_post × 2.19568 × √(π × σ_maj × σ_min)</code>。</li>
+</ul>
+</blockquote>
+<hr>
+<h3 id="write_fitsself-filename-overwritetrue-obj_namemock-channelsnone-dtypenone"><code>write_fits(self, filename, overwrite=True, obj_name='MOCK', channels=None, dtype=None)</code></h3>
+<p><strong>参数：</strong></p>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>filename</code></td>
+<td><code>str</code></td>
+<td>输出路径。若未带 <code>.fits</code> 后缀则自动追加</td>
+</tr>
+<tr>
+<td><code>overwrite</code></td>
+<td><code>bool</code></td>
+<td>允许覆盖（默认：True）</td>
+</tr>
+<tr>
+<td><code>obj_name</code></td>
+<td><code>str</code></td>
+<td>OBJECT 头（最多 16 个字符）</td>
+</tr>
+<tr>
+<td><code>dtype</code></td>
+<td>`str \</td>
+<td>np.dtype \</td>
+<td>None`</td>
+<td>输出类型。<code>None</code> 表示保持原生类型</td>
+</tr>
+</tbody>
+</table>
+<p><strong>返回值：</strong> None</p>
+<blockquote>
+<p><strong>说明：</strong> 仪器头为 <code>ASTROVODKA</code>。轴顺序转置：<code>(RA,Dec,Chan)</code> → FITS <code>(Chan,Dec,RA)</code>。</p>
+</blockquote>
+<hr>
+<h3 id="write_hdf5self-filename-overwritetrue-memmapfalse-compactfalse-channelsnone"><code>write_hdf5(self, filename, overwrite=True, memmap=False, compact=False, channels=None)</code></h3>
+<p><strong>参数：</strong></p>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>memmap</code></td>
+<td><code>bool</code></td>
+<td>在内存中创建文件并返回其句柄</td>
+</tr>
+<tr>
+<td><code>compact</code></td>
+<td><code>bool</code></td>
+<td>省略坐标数组以节省空间</td>
+</tr>
+</tbody>
+</table>
+<p><strong>返回值：</strong> <code>h5py.File | None</code></p>
+<hr>
+<h3 id="write_beam_fitsself-filename-overwritetrue-channelsnone"><code>write_beam_fits(self, filename, overwrite=True, channels=None)</code></h3>
+<p><strong>返回值：</strong> None。若 beam 为 None 则抛出 <code>ValueError</code>。</p>
+<hr>
+<h3 id="previewself-max_points5000-fig1-limnone-vlimnone-point_scalingauto-title-savenone"><code>preview(self, max_points=5000, fig=1, lim=None, vlim=None, point_scaling='auto', title='', save=None)</code></h3>
+<p><strong>参数：</strong></p>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>max_points</code></td>
+<td><code>int</code></td>
+<td>每个面板最多绘制的粒子数（随机抽样）</td>
+</tr>
+<tr>
+<td><code>lim</code></td>
+<td>`str \</td>
+<td>Quantity[deg] \</td>
+<td>None`</td>
+<td>空间范围限制。<code>'datacube'</code> 表示取数据立方体的边界</td>
+</tr>
+<tr>
+<td><code>vlim</code></td>
+<td>`str \</td>
+<td>Quantity[km/s] \</td>
+<td>None`</td>
+<td>速度范围限制</td>
+</tr>
+<tr>
+<td><code>point_scaling</code></td>
+<td><code>str</code></td>
+<td><code>'auto'</code>（按质量 + 平滑长度）或 <code>'fixed'</code></td>
+</tr>
+<tr>
+<td><code>save</code></td>
+<td>`str \</td>
+<td>None`</td>
+<td>把图保存到文件</td>
+</tr>
+</tbody>
+</table>
+<p><strong>返回值：</strong> <code>matplotlib.figure.Figure</code></p>
+<blockquote>
+<p>三联图：天球投影 + 2 幅 PV 图。红框表示 DataCube 的范围。</p>
+</blockquote>
+<hr>
+<h3 id="resetself"><code>reset(self)</code></h3>
+<p><strong>返回值：</strong> None。把 DataCube 以零重新初始化，并保留源与各子模块的配置。</p>
+<hr>
+<h2 id="globalprofile">GlobalProfile</h2>
+<p>仅用于空间积分谱的简化类。不需要 beam、noise 或 SPH kernel。</p>
+<h3 id="__init__self--source-spectral_model-n_channels-channel_width-spectral_centre0-kms-quietfalse"><code>__init__(self, *, source, spectral_model, n_channels, channel_width, spectral_centre=0 km/s, quiet=False)</code></h3>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>source</code></td>
+<td><code>SPHSource</code></td>
+<td>HI 源</td>
+</tr>
+<tr>
+<td><code>spectral_model</code></td>
+<td><code>_BaseSpectrum</code></td>
+<td>谱线模型</td>
+</tr>
+<tr>
+<td><code>n_channels</code></td>
+<td><code>int</code></td>
+<td>通道数</td>
+</tr>
+<tr>
+<td><code>channel_width</code></td>
+<td>`Quantity[km/s \</td>
+<td>Hz]`</td>
+<td>通道宽度</td>
+</tr>
+<tr>
+<td><code>spectral_centre</code></td>
+<td><code>Quantity</code></td>
+<td>光谱中心（默认：0 km/s）</td>
+</tr>
+<tr>
+<td><code>quiet</code></td>
+<td><code>bool</code></td>
+<td>抑制输出</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>使用 1×1 像素的 DataCube 配合 DiracDeltaKernel。所有粒子都会贡献信号。</p>
+</blockquote>
+<h3 id="spectrum属性"><code>spectrum</code>（属性）</h3>
+<p><strong>返回值：</strong> <code>Quantity[Jy]</code> — 一维流量密度数组。惰性求值。</p>
+<h3 id="plot_spectrumself-fig1-title-channelsvelocity-show_vsystrue-savenone"><code>plot_spectrum(self, fig=1, title='', channels='velocity', show_vsys=True, save=None)</code></h3>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>channels</code></td>
+<td><code>str</code></td>
+<td><code>'velocity'</code> 或 <code>'frequency'</code></td>
+</tr>
+<tr>
+<td><code>show_vsys</code></td>
+<td><code>bool</code></td>
+<td>是否在系统速度处画线</td>
+</tr>
+<tr>
+<td><code>save</code></td>
+<td>`str \</td>
+<td>None`</td>
+<td>把图保存到文件</td>
+</tr>
+</tbody>
+</table>
+<p><strong>返回值：</strong> <code>Figure</code></p>
+<footer>astrovodka &mdash; mock resolved HI observations of IllustrisTNG galaxies.
+Generated from the Markdown sources by <code>docs/build_html.py</code>.</footer>
+</div>
+</body>
+</html>

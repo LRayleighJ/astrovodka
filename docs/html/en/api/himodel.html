@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>`astrovodka.himodel` — HI/H2 mass models</title>
+<style>
+:root{--fg:#1c1e21;--muted:#5c6570;--link:#0b62c4;--rule:#d8dee6;--bg:#fff;
+--code-bg:#f4f6f8;--note-bg:#eef4fb;--head:#12395e}
+@media (prefers-color-scheme:dark){:root{--fg:#e6e8eb;--muted:#9aa5b1;--link:#69a8f5;
+--rule:#39404a;--bg:#15181c;--code-bg:#1e2227;--note-bg:#1b2733;--head:#9cc6f0}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);line-height:1.65;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",
+"Noto Sans CJK SC","Noto Sans CJK JP","PingFang SC","Microsoft YaHei",sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:2rem 1.25rem 4rem}
+nav.lang{font-size:.85rem;color:var(--muted);margin-bottom:2rem;
+display:flex;gap:1rem;flex-wrap:wrap;align-items:center}
+nav.lang a{color:var(--link);text-decoration:none}
+nav.lang a:hover{text-decoration:underline}
+h1,h2,h3,h4,h5,h6{color:var(--head);line-height:1.3;margin:2rem 0 .75rem}
+h1{font-size:1.9rem;border-bottom:2px solid var(--rule);padding-bottom:.4rem}
+h2{font-size:1.45rem;border-bottom:1px solid var(--rule);padding-bottom:.3rem}
+h3{font-size:1.15rem}h4{font-size:1rem}
+a{color:var(--link)}
+p,li{margin:.5rem 0}
+code{background:var(--code-bg);padding:.12em .38em;border-radius:4px;
+font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em}
+pre{background:var(--code-bg);padding:1rem;border-radius:8px;overflow-x:auto;
+border:1px solid var(--rule)}
+pre code{background:none;padding:0;font-size:.86rem;line-height:1.5}
+table{border-collapse:collapse;width:100%;margin:1rem 0;display:block;overflow-x:auto}
+th,td{border:1px solid var(--rule);padding:.45rem .7rem;text-align:left;
+vertical-align:top;font-size:.92rem}
+th{background:var(--code-bg);font-weight:600}
+blockquote{margin:1rem 0;padding:.6rem 1rem;border-left:4px solid var(--link);
+background:var(--note-bg);border-radius:0 6px 6px 0}
+blockquote p{margin:.3rem 0}
+hr{border:0;border-top:1px solid var(--rule);margin:2.5rem 0}
+footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--rule);
+color:var(--muted);font-size:.82rem}
+.idx{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.6rem;
+margin:1.5rem 0}
+.idx a{display:block;padding:.7rem .9rem;border:1px solid var(--rule);border-radius:8px;
+text-decoration:none;background:var(--code-bg)}
+.idx a:hover{border-color:var(--link)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="lang"><a href="../../index.html">astrovodka documentation</a><a href="../../zh/index.html">简体中文</a></nav>
+<h1 id="astrovodkahimodel--hih2-mass-models"><code>astrovodka.himodel</code> — HI/H2 mass models</h1>
+<p>Four selectable models for the neutral and molecular hydrogen content of IllustrisTNG gas cells, all as implemented by <a href="https://arxiv.org/abs/1806.02341">Diemer+2018 (arXiv:1806.02341)</a>:</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Surface density from</th>
+<th>Reference</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GD14_vol</code></td>
+<td>per-cell Jeans approximation, <code>Sigma = lambda_J * rho</code></td>
+<td>Gnedin &amp; Draine (2014), Appendix C.3</td>
+</tr>
+<tr>
+<td><code>GD14_map</code></td>
+<td>face-on 128² projection</td>
+<td>same + §2.3</td>
+</tr>
+<tr>
+<td><code>K13_vol</code></td>
+<td>per-cell Jeans approximation</td>
+<td>Krumholz, McKee &amp; Tumlinson (2013), Appendix C.4</td>
+</tr>
+<tr>
+<td><code>K13_map</code></td>
+<td>face-on 128² projection</td>
+<td>same + §2.3</td>
+</tr>
+</tbody>
+</table>
+<p>All four replace MARTINI's pressure-based partition, which is calibrated on nearby galaxies and has no redshift dependence.</p>
+<h2 id="quick-start">Quick start</h2>
+<pre><code class="language-python">from astrovodka.himodel import HIModelConfig, compute_hi_mass
+
+cfg = HIModelConfig(h=0.6774, z=0.0)        # h, z from the snapshot header
+
+res = compute_hi_mass(gas, model=&#x27;K13_vol&#x27;, cfg=cfg)
+res.m_hi          # per gas cell, TNG code units (1e10 Msun/h)
+res.m_h2
+res.m_hi_msun     # total, Msun
+
+# the projected models need the stars and the subhalo record as well
+res = compute_hi_mass(gas, model=&#x27;K13_map&#x27;, cfg=cfg, stars=stars, sub=sub)</code></pre>
+<h2 id="selecting-a-model-by-keyword">Selecting a model by keyword</h2>
+<p><code>model</code> is case-insensitive. The bare model names <code>'K13'</code> and <code>'GD14'</code> mean the volume variant, and the two-argument spelling <code>('GD14', 'map')</code> is accepted.</p>
+<pre><code class="language-python">from astrovodka.himodel import METHODS, resolve, is_known
+
+METHODS           # (&#x27;GD14_vol&#x27;, &#x27;GD14_map&#x27;, &#x27;K13_vol&#x27;, &#x27;K13_map&#x27;)
+is_known(&#x27;k13_map&#x27;)          # True
+resolve(&#x27;K13&#x27;)[&#x27;label&#x27;]      # &#x27;K13_vol&#x27;</code></pre>
+<p>The same keyword is available on the source class:</p>
+<pre><code class="language-python">from astrovodka.sources import TNGSource
+
+source = TNGSource(basePath=..., snapNum=99, subID=113, hi_model=&#x27;GD14_map&#x27;)
+source.m_HI_total     # Msun
+source.m_H2_g         # per-particle H2 mass
+source.f_mol_g        # per-cell molecular fraction</code></pre>
+<h2 id="functions">Functions</h2>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>compute_hi_mass(gas, model, cfg, *, stars, sub, uv_mode, uv)</code></td>
+<td>Per-cell HI and H2 masses under any of the four models. The main entry point.</td>
+</tr>
+<tr>
+<td><code>compute_galaxy_hi_h2_map(gas, stars, sub, cfg, model, ...)</code></td>
+<td>The projected path on its own: builds the face-on maps and returns the galaxy totals plus alignment diagnostics.</td>
+</tr>
+<tr>
+<td><code>calc_UMW_global_Faucher11(redshift)</code></td>
+<td>Faucher-Giguère+2011 UV background in Draine units.</td>
+</tr>
+<tr>
+<td><code>resolve(method)</code> / <code>is_known(method)</code></td>
+<td>Method-name lookup.</td>
+</tr>
+</tbody>
+</table>
+<p>Lower-level pieces, if you need them directly:</p>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Contents</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>himodel.physics</code></td>
+<td>Unit conversions, <code>f_mol_GD14_vol</code>, <code>f_mol_K13_vol</code>, <code>get_f_neutral_H</code></td>
+</tr>
+<tr>
+<td><code>himodel.models</code></td>
+<td><code>f_mol_GD14_map</code>, <code>f_mol_K13_map</code>, <code>calc_rho_star_map</code>, <code>calc_rho_dm_nfw_map</code>, <code>MODEL_SPEC</code></td>
+</tr>
+<tr>
+<td><code>himodel.uvfield</code></td>
+<td><code>compute_galaxy_fft_uv</code>, <code>compute_galaxy_fft_uv_map</code>, <code>compute_align_vector</code>, <code>deposit_gaussian_maps</code></td>
+</tr>
+<tr>
+<td><code>himodel.constants</code></td>
+<td>Physical constants and model defaults (no <code>h</code>)</td>
+</tr>
+<tr>
+<td><code>himodel.config</code></td>
+<td><code>HIModelConfig</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="units">Units</h2>
+<table>
+<thead>
+<tr>
+<th>Quantity</th>
+<th>Unit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>HiMassResult.m_hi</code>, <code>.m_h2</code></td>
+<td>TNG code units, <code>1e10 Msun / h</code> — the same unit as the <code>Masses</code> field</td>
+</tr>
+<tr>
+<td><code>HiMassResult.m_hi_msun</code>, <code>.m_h2_msun</code>, <code>.m_neutral_msun</code></td>
+<td>Msun</td>
+</tr>
+<tr>
+<td><code>HiMassResult.u_mw</code></td>
+<td>Draine field units (<code>U_MW = 1</code> is the Milky Way)</td>
+</tr>
+</tbody>
+</table>
+<p>Densities inside the model are converted with <code>HIModelConfig.h</code> and <code>.z</code>; <code>h</code> is a per-snapshot quantity and deliberately does not appear as a module constant anywhere.</p>
+<h2 id="results">Results</h2>
+<p><code>compute_hi_mass</code> returns a <code>HiMassResult</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>m_hi</code>, <code>m_h2</code></td>
+<td>Per-cell masses, <strong>full length</strong> — cells the model excludes get zero, never a shorter array</td>
+</tr>
+<tr>
+<td><code>m_neutral</code></td>
+<td><code>m_hi + m_h2</code>, exactly the neutral hydrogen mass</td>
+</tr>
+<tr>
+<td><code>f_mol</code>, <code>f_neutral</code></td>
+<td>Per-cell fractions</td>
+</tr>
+<tr>
+<td><code>u_mw</code></td>
+<td>Per-cell UV field (volume models)</td>
+</tr>
+<tr>
+<td><code>diagnostics</code></td>
+<td>UV mode, projection geometry, alignment, <code>f_gas_in_map</code></td>
+</tr>
+<tr>
+<td><code>cells</code></td>
+<td>The underlying <code>Cells</code> table</td>
+</tr>
+</tbody>
+</table>
+<h2 id="the-projected-models-and-gas-outside-the-box">The projected models and gas outside the box</h2>
+<p>The projected models build a face-on map sized <code>L = 2 * max(2 R_half,gas, 6 R_half,*, 30 kpc)</code> and read each cell's molecular fraction off it. Cells outside that box get <strong>zero</strong> HI and H2: the model's galaxy <em>is</em> the projection box, and the catalog total for the method is the in-box total.</p>
+<p>The fraction of gas mass that falls inside is reported as <code>f_gas_in_map</code>; <code>TNGSource</code> prints a warning when it drops below 0.9. To keep the outside gas instead, clamp it onto the edge pixel with</p>
+<pre><code class="language-python">cfg = HIModelConfig(h=0.6774, z=0.0, map_clip_outside=True)</code></pre>
+<p>which conserves mass at the cost of piling it on the boundary.</p>
+<h2 id="configuration">Configuration</h2>
+<p><code>HIModelConfig</code> is a frozen dataclass; <code>HIModelConfig.build(dict_or_config, h=..., z=...)</code> resolves user settings against a snapshot's header values, with <code>h</code>, <code>z</code> and the box size always taken from the snapshot.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ngrid</code></td>
+<td>128</td>
+<td>3D FFT UV grid edge length</td>
+</tr>
+<tr>
+<td><code>f_esc</code></td>
+<td>0.1</td>
+<td>UV escape fraction (Diemer+2018 §4.2)</td>
+</tr>
+<tr>
+<td><code>box_expand</code></td>
+<td>1.1</td>
+<td>adaptive UV box = this × the gas coordinate extent</td>
+</tr>
+<tr>
+<td><code>ngrid_map</code></td>
+<td>128</td>
+<td>2D projection grid edge length</td>
+</tr>
+<tr>
+<td><code>vol_fine_grid</code></td>
+<td>0.0</td>
+<td>second, higher-resolution UV box (paper App. A.2); off by default</td>
+</tr>
+<tr>
+<td><code>r_soft_map_mode</code></td>
+<td><code>'dx'</code></td>
+<td>where the 2D kernel's softening length comes from</td>
+</tr>
+<tr>
+<td><code>map_clip_outside</code></td>
+<td><code>False</code></td>
+<td>keep gas outside the projection box (mass conserving)</td>
+</tr>
+<tr>
+<td><code>k13_variant</code></td>
+<td><code>'2p'</code></td>
+<td>which prescription sets <code>n_CNM</code> in the projected K13 model</td>
+</tr>
+<tr>
+<td><code>rho_dm_mode</code></td>
+<td><code>'none'</code></td>
+<td>dark-matter mid-plane density for projected K13</td>
+</tr>
+</tbody>
+</table>
+<p>See the class docstring for the full list and the reasoning behind each default.</p>
+<h2 id="uv_mode"><code>uv_mode</code></h2>
+<p>The volume models take their UV field either from a per-galaxy FFT convolution of the star-formation distribution (<code>uv_mode='adaptive_fft'</code>, the default) or from the uniform Faucher-Giguère+2011 background (<code>uv_mode='global'</code>). Both apply the background as a floor, so <code>'global'</code> is the <code>'adaptive_fft'</code> limit of a galaxy with no star formation.</p>
+<p>The projected models derive their UV field from the SFR map — that is part of the method definition — so <code>uv_mode</code> does not apply to them and passing <code>'global'</code> alongside a <code>*_map</code> model raises.</p>
+<blockquote>
+<p><strong>Changed in v0.3.0.</strong> The default was <code>'global'</code>, and <code>'adaptive_fft'</code> was silently identical to it: the interpolator was built with one axis' edge array reused for all three, so almost every particle fell outside its bounds and <code>fill_value=0.0</code> returned zero, leaving only the background. The default is now <code>'adaptive_fft'</code>, which does what its name says.</p>
+</blockquote>
+<h2 id="verification">Verification</h2>
+<p>The physical expressions are ported verbatim from <code>TNGHIcalc</code>, which is verified bit-for-bit against Diemer+2018's reference implementation (<code>TNGHI_GD14_model/gd14_model.py</code>) — see <a href="en/verification.html">the verification record</a> for the chain of evidence and the reproduction commands.</p>
+<footer>astrovodka &mdash; mock resolved HI observations of IllustrisTNG galaxies.
+Generated from the Markdown sources by <code>docs/build_html.py</code>.</footer>
+</div>
+</body>
+</html>

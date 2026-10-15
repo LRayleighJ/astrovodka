@@ -1,36 +1,115 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "astrovodka"
-version = "0.1.0"
-authors = [
-    { name = "astrovodka developers" },
-]
-description = "Synthetic HI observations from SPH simulations with cosmological distances and K13 HI modeling"
+version = "1.0.0"
+description = "Mock resolved HI (21 cm) observations of IllustrisTNG galaxies, with cosmological distances and four selectable HI/H2 models from Diemer+2018"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.9"
+license = { text = "GPL-3.0-or-later" }
+authors = [
+    { name = "Zerui Liu", email = "liuzr@bao.ac.cn" },
+]
+maintainers = [
+    { name = "Zerui Liu", email = "liuzr@bao.ac.cn" },
+]
+keywords = [
+    "astronomy",
+    "astrophysics",
+    "radio astronomy",
+    "21cm",
+    "HI",
+    "galaxy formation",
+    "IllustrisTNG",
+    "SPH",
+    "mock observations",
+]
 classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Astronomy",
+    "Topic :: Scientific/Engineering :: Physics",
 ]
 dependencies = [
-    "numpy",
-    "scipy",
-    "astropy",
-    "tqdm",
+    "numpy>=1.20",
+    "scipy>=1.6",
+    "astropy>=5.0",
+    "tqdm>=4.40",
+    # datacube.py uses typing.Self (PEP 673), which only enters the stdlib in 3.11.
+    "typing_extensions>=4.0; python_version < '3.11'",
 ]
 
 [project.optional-dependencies]
-parallel = ["multiprocess"]
-hdf5_output = ["h5py"]
-plotting = ["matplotlib"]
+# h5py is required both to *read* TNG snapshots (TNGSource, SubhaloDataProducts)
+# and to write HDF5 output, so it is needed for any TNG workflow.
+hdf5 = ["h5py>=3.0"]
+parallel = ["multiprocess>=0.70"]
+plotting = ["matplotlib>=3.4"]
 testing = [
-    "pytest",
-    "pytest-cov",
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+]
+all = [
+    "h5py>=3.0",
+    "multiprocess>=0.70",
+    "matplotlib>=3.4",
 ]
 dev = [
-    "astrovodka[parallel,hdf5_output,plotting,testing]",
+    "h5py>=3.0",
+    "multiprocess>=0.70",
+    "matplotlib>=3.4",
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/LRayleighJ/astrovodka"
+Repository = "https://github.com/LRayleighJ/astrovodka"
+Issues = "https://github.com/LRayleighJ/astrovodka/issues"
+Changelog = "https://github.com/LRayleighJ/astrovodka/blob/master/CHANGELOG.md"
+Documentation = "https://github.com/LRayleighJ/astrovodka/blob/master/docs/en/index.md"
+
+[tool.setuptools.packages.find]
+# Explicit, so that a new top-level directory can never be mistaken for a package.
+include = ["astrovodka*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Lets `pytest` work from a fresh clone without an editable install.
+pythonpath = ["."]
+addopts = "-ra --strict-markers"
+
+[tool.coverage.run]
+source = ["astrovodka"]
+omit = ["tests/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py39"
+extend-exclude = ["docs", "examples"]
+
+[tool.ruff.lint]
+# Deliberately narrow: the observation machinery is vendored from MARTINI and is
+# not restyled here, so only genuine errors (pyflakes + syntax/import errors) are
+# enforced repo-wide.
+select = ["E4", "E7", "E9", "F"]
+
+[tool.mypy]
+ignore_missing_imports = true

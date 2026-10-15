@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>astrovodka API 参考</title>
+<style>
+:root{--fg:#1c1e21;--muted:#5c6570;--link:#0b62c4;--rule:#d8dee6;--bg:#fff;
+--code-bg:#f4f6f8;--note-bg:#eef4fb;--head:#12395e}
+@media (prefers-color-scheme:dark){:root{--fg:#e6e8eb;--muted:#9aa5b1;--link:#69a8f5;
+--rule:#39404a;--bg:#15181c;--code-bg:#1e2227;--note-bg:#1b2733;--head:#9cc6f0}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);line-height:1.65;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",
+"Noto Sans CJK SC","Noto Sans CJK JP","PingFang SC","Microsoft YaHei",sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:2rem 1.25rem 4rem}
+nav.lang{font-size:.85rem;color:var(--muted);margin-bottom:2rem;
+display:flex;gap:1rem;flex-wrap:wrap;align-items:center}
+nav.lang a{color:var(--link);text-decoration:none}
+nav.lang a:hover{text-decoration:underline}
+h1,h2,h3,h4,h5,h6{color:var(--head);line-height:1.3;margin:2rem 0 .75rem}
+h1{font-size:1.9rem;border-bottom:2px solid var(--rule);padding-bottom:.4rem}
+h2{font-size:1.45rem;border-bottom:1px solid var(--rule);padding-bottom:.3rem}
+h3{font-size:1.15rem}h4{font-size:1rem}
+a{color:var(--link)}
+p,li{margin:.5rem 0}
+code{background:var(--code-bg);padding:.12em .38em;border-radius:4px;
+font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em}
+pre{background:var(--code-bg);padding:1rem;border-radius:8px;overflow-x:auto;
+border:1px solid var(--rule)}
+pre code{background:none;padding:0;font-size:.86rem;line-height:1.5}
+table{border-collapse:collapse;width:100%;margin:1rem 0;display:block;overflow-x:auto}
+th,td{border:1px solid var(--rule);padding:.45rem .7rem;text-align:left;
+vertical-align:top;font-size:.92rem}
+th{background:var(--code-bg);font-weight:600}
+blockquote{margin:1rem 0;padding:.6rem 1rem;border-left:4px solid var(--link);
+background:var(--note-bg);border-radius:0 6px 6px 0}
+blockquote p{margin:.3rem 0}
+hr{border:0;border-top:1px solid var(--rule);margin:2.5rem 0}
+footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--rule);
+color:var(--muted);font-size:.82rem}
+.idx{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.6rem;
+margin:1.5rem 0}
+.idx a{display:block;padding:.7rem .9rem;border:1px solid var(--rule);border-radius:8px;
+text-decoration:none;background:var(--code-bg)}
+.idx a:hover{border-color:var(--link)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="lang"><a href="../../index.html">astrovodka documentation</a><a href="../../en/index.html">English</a></nav>
+<h1 id="astrovodka-api-参考">astrovodka API 参考</h1>
+<p>Version 1.0.0 — 对 IllustrisTNG 星系生成模拟 HI 观测，具备宇宙学距离， 并提供四种可选的 Diemer+2018 HI/H2 模型。</p>
+<p>这里是逐模块的接口参考。背后的概念请先看<a href="zh/guide.html">用户指南</a>； HI/H2 物理见 <a href="zh/hi-models.html">HI/H2 模型</a>；安装见 <a href="zh/installation.html">安装与环境配置</a>。</p>
+<h2 id="模块">模块</h2>
+<table>
+<thead>
+<tr>
+<th>模块</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="zh/api/martini.html">martini</a></td>
+<td>核心流水线 — Martini 与 GlobalProfile 两个类</td>
+</tr>
+<tr>
+<td><a href="zh/api/datacube.html">datacube</a></td>
+<td>DataCube — WCS 网格定义</td>
+</tr>
+<tr>
+<td><a href="zh/api/sph_source.html">sph_source</a></td>
+<td>SPHSource — 通用 SPH 源（红移模式 + 距离模式）</td>
+</tr>
+<tr>
+<td><a href="zh/api/tng_source.html">tng_source</a></td>
+<td>TNGSource — IllustrisTNG 源 + 可选 HI 模型</td>
+</tr>
+<tr>
+<td><a href="zh/api/beams.html">beams</a></td>
+<td>GaussianBeam — 望远镜波束模型</td>
+</tr>
+<tr>
+<td><a href="zh/api/noise.html">noise</a></td>
+<td>GaussianNoise — 噪声模型</td>
+</tr>
+<tr>
+<td><a href="zh/api/spectral_models.html">spectral_models</a></td>
+<td>GaussianSpectrum、DiracDeltaSpectrum — 21-cm 谱线模型</td>
+</tr>
+<tr>
+<td><a href="zh/api/sph_kernels.html">sph_kernels</a></td>
+<td>SPH 平滑核（6 种，带自适应回退）</td>
+</tr>
+<tr>
+<td><a href="zh/api/cosmology_utils.html">cosmology_utils</a></td>
+<td>宇宙学距离与单位换算辅助函数</td>
+</tr>
+<tr>
+<td><a href="zh/api/himodel.html">himodel</a></td>
+<td>四种可选 HI/H2 模型（GD14/K13，体密度/投影）</td>
+</tr>
+<tr>
+<td><a href="zh/api/data_products.html">data_products</a></td>
+<td>SubhaloDataProducts — 三维网格化 UV/DM/HI/H2</td>
+</tr>
+<tr>
+<td><a href="zh/api/L_coords.html">L_coords</a></td>
+<td>角动量对齐坐标</td>
+</tr>
+<tr>
+<td><a href="zh/api/_illustris_tools.html">_illustris_tools</a></td>
+<td>TNG 快照数据 I/O 工具</td>
+</tr>
+</tbody>
+</table>
+<footer>astrovodka &mdash; mock resolved HI observations of IllustrisTNG galaxies.
+Generated from the Markdown sources by <code>docs/build_html.py</code>.</footer>
+</div>
+</body>
+</html>

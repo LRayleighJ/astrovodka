@@ -1,3 +1,4 @@
+from __future__ import annotations
 import os
 import numpy as np
 from pathlib import Path
@@ -287,7 +288,6 @@ def loadSubset(
         The loaded data.
     """
     import h5py
-    import six
 
     if result is None:
         result = {}
@@ -296,7 +296,7 @@ def loadSubset(
     gName = "PartType" + str(ptNum)
 
     # make sure fields is not a single element
-    if isinstance(fields, six.string_types):
+    if isinstance(fields, str):
         fields = [fields]
 
     # load header from first chunk

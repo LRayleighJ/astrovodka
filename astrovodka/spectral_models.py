@@ -1,6 +1,10 @@
 """Provides classes for modelling the 21-cm spectral line emitted by a SPH particle."""
 
-from types import EllipsisType
+from __future__ import annotations
+try:
+    from types import EllipsisType
+except ImportError:
+    EllipsisType = type(Ellipsis)
 import numpy as np
 import astropy.units as U
 from astropy import constants as C
@@ -14,23 +18,23 @@ class _BaseSpectrum(metaclass=ABCMeta):
     """
     Abstract base class for implementions of spectral models to inherit from.
 
-    Classes inheriting from :class:`~martini.spectral_models._BaseSpectrum` must implement
-    two methods: :meth:`~martini.spectral_models._BaseSpectrum.half_width` and
-    :meth:`~martini.spectral_models._BaseSpectrum.spectral_function`.
+    Classes inheriting from :class:`~astrovodka.spectral_models._BaseSpectrum` must implement
+    two methods: :meth:`~astrovodka.spectral_models._BaseSpectrum.half_width` and
+    :meth:`~astrovodka.spectral_models._BaseSpectrum.spectral_function`.
 
-    :meth:`~martini.spectral_models._Base_spectrum.half_width` should define a
+    :meth:`~astrovodka.spectral_models._Base_spectrum.half_width` should define a
     characteristic width for the model, measured from the peak to the characteristic
     location. Note that particles whose spectra within +/- 4 half-widths of the peak do
     not intersect the data cube bandpass will be discarded to speed computation.
 
-    :meth:`~martini.spectral_models._BaseSpectrum.spectral_function` should define the
+    :meth:`~astrovodka.spectral_models._BaseSpectrum.spectral_function` should define the
     model spectrum. The spectrum should integrate to 1, the amplitude is handled
     separately.
 
     They may also override the method
-    :meth:`~martini.spectral_models._BaseSpectrum.get_spectral_function_extra_data` to
-    make information that depends on the :class:`~martini.sources.sph_source.SPHSource`
-    (or derived class) or :class:`~martini.datacube.DataCube` properties available
+    :meth:`~astrovodka.spectral_models._BaseSpectrum.get_spectral_function_extra_data` to
+    make information that depends on the :class:`~astrovodka.sources.sph_source.SPHSource`
+    (or derived class) or :class:`~astrovodka.datacube.DataCube` properties available
     internally. This is required because the source object is not accessible at class
     initialization.
 
@@ -46,8 +50,8 @@ class _BaseSpectrum(metaclass=ABCMeta):
 
     See Also
     --------
-    martini.spectral_models.GaussianSpectrum
-    martini.spectral_models.DiracDeltaSpectrum
+    astrovodka.spectral_models.GaussianSpectrum
+    astrovodka.spectral_models.DiracDeltaSpectrum
     """
 
     spectra: U.Quantity[U.Jy] | None
@@ -65,9 +69,9 @@ class _BaseSpectrum(metaclass=ABCMeta):
         Pre-compute the spectrum of each particle.
 
         The spectral model defined in
-        :meth:`~martini.spectral_models._BaseSpectrum.spectral_function` is evaluated
-        using the channel edges from the :class:`~martini.datacube.DataCube` instance and
-        the particle velocities of the :class:`~martini.sources.sph_source.SPHSource` (or
+        :meth:`~astrovodka.spectral_models._BaseSpectrum.spectral_function` is evaluated
+        using the channel edges from the :class:`~astrovodka.datacube.DataCube` instance and
+        the particle velocities of the :class:`~astrovodka.sources.sph_source.SPHSource` (or
         derived class) instance provided.
 
         If the instance of this class was initialized with ``ncpu > 1`` then a
@@ -79,18 +83,23 @@ class _BaseSpectrum(metaclass=ABCMeta):
 
         Parameters
         ----------
-        source : ~martini.sources.sph_source.SPHSource
+        source : ~astrovodka.sources.sph_source.SPHSource
             Source object containing arrays of particle properties.
 
-        datacube : ~martini.datacube.DataCube
-            :class:`~martini.datacube.DataCube` object defining the observational
+        datacube : ~astrovodka.datacube.DataCube
+            :class:`~astrovodka.datacube.DataCube` object defining the observational
             parameters, including spectral channels.
         """
         self.channel_edges = datacube.velocity_channel_edges
         channel_widths = np.abs(np.diff(self.channel_edges.to(U.km * U.s**-1)))
         assert source.skycoords is not None
         self.vmids = source.skycoords.radial_velocity
-        A = source.mHI_g * np.power(source.skycoords.distance.to(U.Mpc), -2)
+        # The observed flux of a source of HI mass M is S ~ M / D_L^2, so the flux
+        # normalisation uses the *luminosity* distance. Note that this is deliberately
+        # NOT `source.skycoords.distance`: particles are placed on the sky at the
+        # angular diameter distance D_A = D_L / (1+z)^2 (see SPHSource._init_skycoords),
+        # so using it here would suppress the flux by (1+z)^4.
+        A = source.mHI_g * np.power(source.luminosity_distance.to(U.Mpc), -2)
 
         if self.ncpu == 1:
             self.spectra = self.evaluate_spectra(source, datacube)
@@ -160,11 +169,11 @@ class _BaseSpectrum(metaclass=ABCMeta):
 
         Parameters
         ----------
-        source : ~martini.sources.sph_source.SPHSource
+        source : ~astrovodka.sources.sph_source.SPHSource
             Source object containing arrays of particle properties.
 
-        datacube : ~martini.datacube.DataCube
-            :class:`~martini.datacube.DataCube` object defining the observational
+        datacube : ~astrovodka.datacube.DataCube
+            :class:`~astrovodka.datacube.DataCube` object defining the observational
             parameters, including spectral channels.
 
         mask : slice, optional
@@ -206,7 +215,7 @@ class _BaseSpectrum(metaclass=ABCMeta):
 
         Parameters
         ----------
-        source : ~martini.sources.sph_source.SPHSource
+        source : ~astrovodka.sources.sph_source.SPHSource
             The source object will be provided to allow access to particle
             properties.
         """
@@ -246,7 +255,7 @@ class _BaseSpectrum(metaclass=ABCMeta):
 
         See Also
         --------
-        martini.spectral_models._BaseSpectrum.get_spectral_function_extra_data
+        astrovodka.spectral_models._BaseSpectrum.get_spectral_function_extra_data
         """
         pass  # pragma: no cover
 
@@ -262,18 +271,18 @@ class _BaseSpectrum(metaclass=ABCMeta):
 
         Derived classes should override this function, if needed, to populate the dict
         with any information from the source that is required by the
-        :meth:`~martini.spectral_models._BaseSpectrum.spectral_function`,
+        :meth:`~astrovodka.spectral_models._BaseSpectrum.spectral_function`,
         then call ``super().get_spectral_function_extra_data`` with the ``extra_data``
         argument set to the dictionary that they loaded. This function then handles
         setting up the array for broadcasting.
 
         Parameters
         ----------
-        source : ~martini.sources.sph_source.SPHSource
+        source : ~astrovodka.sources.sph_source.SPHSource
             Source object, making particle properties available.
 
-        datacube : ~martini.datacube.DataCube
-            :class:`~martini.datacube.DataCube` object defining the observational
+        datacube : ~astrovodka.datacube.DataCube
+            :class:`~astrovodka.datacube.DataCube` object defining the observational
             parameters, including spectral channels.
 
         mask : slice, optional
@@ -291,7 +300,7 @@ class _BaseSpectrum(metaclass=ABCMeta):
 
         See Also
         --------
-        martini.spectral_models.GaussianSpectrum.get_spectral_function_extra_data
+        astrovodka.spectral_models.GaussianSpectrum.get_spectral_function_extra_data
         """
         if extra_data is None:
             return {}
@@ -329,8 +338,8 @@ class GaussianSpectrum(_BaseSpectrum):
 
     See Also
     --------
-    martini.spectral_models._BaseSpectrum
-    martini.spectral_models.DiracDeltaSpectrum
+    astrovodka.spectral_models._BaseSpectrum
+    astrovodka.spectral_models.DiracDeltaSpectrum
     """
 
     def __init__(
@@ -355,7 +364,7 @@ class GaussianSpectrum(_BaseSpectrum):
         Evaluate a Gaussian integral in a channel.
 
         Requires sigma to be available from
-        :attr:`~martini.spectral_models.GaussianSpectrum.spectral_function_extra_data`.
+        :attr:`~astrovodka.spectral_models.GaussianSpectrum.spectral_function_extra_data`.
 
         Parameters
         ----------
@@ -435,15 +444,15 @@ class GaussianSpectrum(_BaseSpectrum):
         Expose particle velocity dispersions.
 
         Access to these is needed by
-        :meth:`~martini.spectral_models.GaussianSpectrum.spectral_function`.
+        :meth:`~astrovodka.spectral_models.GaussianSpectrum.spectral_function`.
 
         Parameters
         ----------
-        source : ~martini.sources.sph_source.SPHSource
+        source : ~astrovodka.sources.sph_source.SPHSource
             Source object.
 
-        datacube : ~martini.datacube.DataCube
-            :class:`~martini.datacube.DataCube` object.
+        datacube : ~astrovodka.datacube.DataCube
+            :class:`~astrovodka.datacube.DataCube` object.
 
         mask : slice, optional
             Slice defining the subset of particles to operate on.
@@ -468,7 +477,7 @@ class GaussianSpectrum(_BaseSpectrum):
 
         Parameters
         ----------
-        source : ~martini.sources.sph_source.SPHSource
+        source : ~astrovodka.sources.sph_source.SPHSource
             Source object, making particle properties available.
 
         Returns
@@ -575,7 +584,7 @@ class DiracDeltaSpectrum(_BaseSpectrum):
 
         Parameters
         ----------
-        source : ~martini.sources.sph_source.SPHSource
+        source : ~astrovodka.sources.sph_source.SPHSource
             Source object, making particle properties available.
 
         Returns

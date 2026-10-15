@@ -1,0 +1,24 @@
+# Everything needed to run the test suite, the examples and the tutorials.
+#
+#     pip install -r requirements-dev.txt
+#
+# This mirrors `pip install -e ".[dev]"`. The versions in the comment after
+# each line are the ones the repository is developed and verified against
+# (see docs/en/installation.md), not hard pins — any recent release works.
+
+-r requirements.txt
+
+# TNG snapshot access and HDF5 output. Required for TNGSource: h5py is needed
+# to *read* the snapshot, not only to write products.
+h5py>=3.0                     # 3.12.1
+
+# Multi-core source insertion (ncpu > 1). Note: `multiprocess`, not the stdlib
+# `multiprocessing` — MARTINI uses it for dill-based serialisation.
+multiprocess>=0.70            # 0.70.17
+
+# Figures: Martini.preview(), plot_spectrum(), and the tutorial notebooks.
+matplotlib>=3.4               # 3.9.3
+
+# Testing.
+pytest>=7.0                   # 8.4.2
+pytest-cov>=4.0

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>astrovodka.sources.tng_source — TNGSource</title>
+<style>
+:root{--fg:#1c1e21;--muted:#5c6570;--link:#0b62c4;--rule:#d8dee6;--bg:#fff;
+--code-bg:#f4f6f8;--note-bg:#eef4fb;--head:#12395e}
+@media (prefers-color-scheme:dark){:root{--fg:#e6e8eb;--muted:#9aa5b1;--link:#69a8f5;
+--rule:#39404a;--bg:#15181c;--code-bg:#1e2227;--note-bg:#1b2733;--head:#9cc6f0}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);line-height:1.65;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",
+"Noto Sans CJK SC","Noto Sans CJK JP","PingFang SC","Microsoft YaHei",sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:2rem 1.25rem 4rem}
+nav.lang{font-size:.85rem;color:var(--muted);margin-bottom:2rem;
+display:flex;gap:1rem;flex-wrap:wrap;align-items:center}
+nav.lang a{color:var(--link);text-decoration:none}
+nav.lang a:hover{text-decoration:underline}
+h1,h2,h3,h4,h5,h6{color:var(--head);line-height:1.3;margin:2rem 0 .75rem}
+h1{font-size:1.9rem;border-bottom:2px solid var(--rule);padding-bottom:.4rem}
+h2{font-size:1.45rem;border-bottom:1px solid var(--rule);padding-bottom:.3rem}
+h3{font-size:1.15rem}h4{font-size:1rem}
+a{color:var(--link)}
+p,li{margin:.5rem 0}
+code{background:var(--code-bg);padding:.12em .38em;border-radius:4px;
+font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em}
+pre{background:var(--code-bg);padding:1rem;border-radius:8px;overflow-x:auto;
+border:1px solid var(--rule)}
+pre code{background:none;padding:0;font-size:.86rem;line-height:1.5}
+table{border-collapse:collapse;width:100%;margin:1rem 0;display:block;overflow-x:auto}
+th,td{border:1px solid var(--rule);padding:.45rem .7rem;text-align:left;
+vertical-align:top;font-size:.92rem}
+th{background:var(--code-bg);font-weight:600}
+blockquote{margin:1rem 0;padding:.6rem 1rem;border-left:4px solid var(--link);
+background:var(--note-bg);border-radius:0 6px 6px 0}
+blockquote p{margin:.3rem 0}
+hr{border:0;border-top:1px solid var(--rule);margin:2.5rem 0}
+footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--rule);
+color:var(--muted);font-size:.82rem}
+.idx{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.6rem;
+margin:1.5rem 0}
+.idx a{display:block;padding:.7rem .9rem;border:1px solid var(--rule);border-radius:8px;
+text-decoration:none;background:var(--code-bg)}
+.idx a:hover{border-color:var(--link)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="lang"><a href="../../index.html">astrovodka documentation</a><a href="../../en/index.html">English</a></nav>
+<h1 id="astrovodkasourcestng_source--tngsource">astrovodka.sources.tng_source — TNGSource</h1>
+<p>从本地磁盘读取 IllustrisTNG 数据，并用四种 <a href="zh/api/himodel.html">Diemer+2018 模型</a>之一 逐粒子计算 HI/H2 质量。继承自 <code>SPHSource</code>。</p>
+<h2 id="tngsourcesphsource">TNGSource(SPHSource)</h2>
+<h3 id="__init__self-basepath-snapnum-subid--cosmologynone-hi_modelk13_vol-hi_confignone-uv_modeadaptive_fft-observed_redshiftnone-load_subhalo_onlytrue-vpeculiar0-kms-rotationnone-l_coordsnone-ra0-deg-dec0-deg-coordinate_frameicrs"><code>__init__(self, basePath, snapNum, subID, *, cosmology=None, hi_model='K13_vol', hi_config=None, uv_mode='adaptive_fft', observed_redshift=None, load_subhalo_only=True, vpeculiar=0 km/s, rotation=None, L_coords=None, ra=0 deg, dec=0 deg, coordinate_frame=ICRS())</code></h3>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>basePath</code></td>
+<td><code>str</code></td>
+<td>TNG 数据根目录。例如 <code>/data/.../TNG/TNG-100/</code></td>
+</tr>
+<tr>
+<td><code>snapNum</code></td>
+<td><code>int</code></td>
+<td>快照号：99 (z~0)、67 (z~0.5)、50 (z~1.0)</td>
+</tr>
+<tr>
+<td><code>subID</code></td>
+<td><code>int</code></td>
+<td>子晕 ID</td>
+</tr>
+<tr>
+<td><code>cosmology</code></td>
+<td>`Cosmology \</td>
+<td>None`</td>
+<td>默认：Planck15</td>
+</tr>
+<tr>
+<td><code>hi_model</code></td>
+<td><code>str</code></td>
+<td>四种可选模型之一：<code>'K13_vol'</code>（默认）、<code>'K13_map'</code>、<code>'GD14_vol'</code>、<code>'GD14_map'</code>；不区分大小写，<code>'K13'</code>/<code>'GD14'</code> 表示体密度变体</td>
+</tr>
+<tr>
+<td><code>hi_config</code></td>
+<td>`HIModelConfig \</td>
+<td>dict \</td>
+<td>None`</td>
+<td>HI 模型设置；<code>h</code>/<code>z</code> 始终取自快照</td>
+</tr>
+<tr>
+<td><code>uv_mode</code></td>
+<td><code>str</code></td>
+<td>仅体密度模型：<code>'adaptive_fft'</code>（默认）或 <code>'global'</code></td>
+</tr>
+<tr>
+<td><code>observed_redshift</code></td>
+<td>`float \</td>
+<td>None`</td>
+<td>用观测红移覆盖距离计算。K13 使用快照红移 z</td>
+</tr>
+<tr>
+<td><code>load_subhalo_only</code></td>
+<td><code>bool</code></td>
+<td><strong>True</strong>（快，仅子晕）或 False（FOF 群）</td>
+</tr>
+<tr>
+<td><code>vpeculiar</code></td>
+<td><code>Quantity[km/s]</code></td>
+<td>本动速度（默认：0）</td>
+</tr>
+<tr>
+<td><code>rotation</code></td>
+<td>`Rotation \</td>
+<td>None`</td>
+<td>源的取向</td>
+</tr>
+<tr>
+<td><code>L_coords</code></td>
+<td>`L_coords \</td>
+<td>None`</td>
+<td>角动量对齐</td>
+</tr>
+<tr>
+<td><code>ra</code> / <code>dec</code></td>
+<td><code>Quantity[deg]</code></td>
+<td>源的中心（默认：0）</td>
+</tr>
+<tr>
+<td><code>coordinate_frame</code></td>
+<td><code>BaseRADecFrame</code></td>
+<td>坐标系（默认：ICRS）</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>说明：</strong></p>
+<ul>
+<li>前 3 个参数为位置参数，其余为仅关键字参数。</li>
+<li><strong><code>observed_redshift</code></strong>：把 HI 模型物理（快照 z）与距离（观测 z）解耦。</li>
+<li><strong><code>load_subhalo_only=True</code></strong> 是默认值，比加载 FOF 群快得多。</li>
+<li>体密度模型使用 8 个 TNG 气体场：Masses、Density、InternalEnergy、SFR、NeutralHydrogenAbundance、GFM_Metals、GFM_Metallicity、Coordinates。投影（<code>*_map</code>）模型不需要 InternalEnergy，但需要恒星粒子和子晕记录。</li>
+<li><code>hi_model</code> 会在从磁盘读取任何数据之前先校验，因此拼错也不会付出代价。</li>
+</ul>
+</blockquote>
+<h2 id="关键属性">关键属性</h2>
+<table>
+<thead>
+<tr>
+<th>属性</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>source_redshift</code></td>
+<td><code>float</code></td>
+<td>快照红移</td>
+</tr>
+<tr>
+<td><code>D_L</code></td>
+<td><code>Quantity[Mpc]</code></td>
+<td>光度距离</td>
+</tr>
+<tr>
+<td><code>D_A</code></td>
+<td><code>Quantity[Mpc]</code></td>
+<td>角直径距离</td>
+</tr>
+<tr>
+<td><code>m_H2_g</code></td>
+<td><code>Quantity[M_sun]</code></td>
+<td>每个粒子的 H2 质量</td>
+</tr>
+<tr>
+<td><code>hi_model</code></td>
+<td><code>str</code></td>
+<td>解析后的模型名</td>
+</tr>
+<tr>
+<td><code>hi_config</code></td>
+<td><code>HIModelConfig</code></td>
+<td>实际使用的配置</td>
+</tr>
+<tr>
+<td><code>f_mol_g</code>, <code>f_neutral_g</code></td>
+<td><code>ndarray</code></td>
+<td>逐单元的分子/中性比例</td>
+</tr>
+<tr>
+<td><code>u_mw_g</code></td>
+<td><code>ndarray</code></td>
+<td>逐单元的 UV 场（体密度模型）</td>
+</tr>
+<tr>
+<td><code>hi_diagnostics</code></td>
+<td><code>dict</code></td>
+<td>投影几何、对齐情况、<code>f_gas_in_map</code></td>
+</tr>
+</tbody>
+</table>
+<footer>astrovodka &mdash; mock resolved HI observations of IllustrisTNG galaxies.
+Generated from the Markdown sources by <code>docs/build_html.py</code>.</footer>
+</div>
+</body>
+</html>

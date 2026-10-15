@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>astrovodka.sources._illustris_tools — TNG Data I/O</title>
+<style>
+:root{--fg:#1c1e21;--muted:#5c6570;--link:#0b62c4;--rule:#d8dee6;--bg:#fff;
+--code-bg:#f4f6f8;--note-bg:#eef4fb;--head:#12395e}
+@media (prefers-color-scheme:dark){:root{--fg:#e6e8eb;--muted:#9aa5b1;--link:#69a8f5;
+--rule:#39404a;--bg:#15181c;--code-bg:#1e2227;--note-bg:#1b2733;--head:#9cc6f0}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);line-height:1.65;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",
+"Noto Sans CJK SC","Noto Sans CJK JP","PingFang SC","Microsoft YaHei",sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:2rem 1.25rem 4rem}
+nav.lang{font-size:.85rem;color:var(--muted);margin-bottom:2rem;
+display:flex;gap:1rem;flex-wrap:wrap;align-items:center}
+nav.lang a{color:var(--link);text-decoration:none}
+nav.lang a:hover{text-decoration:underline}
+h1,h2,h3,h4,h5,h6{color:var(--head);line-height:1.3;margin:2rem 0 .75rem}
+h1{font-size:1.9rem;border-bottom:2px solid var(--rule);padding-bottom:.4rem}
+h2{font-size:1.45rem;border-bottom:1px solid var(--rule);padding-bottom:.3rem}
+h3{font-size:1.15rem}h4{font-size:1rem}
+a{color:var(--link)}
+p,li{margin:.5rem 0}
+code{background:var(--code-bg);padding:.12em .38em;border-radius:4px;
+font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em}
+pre{background:var(--code-bg);padding:1rem;border-radius:8px;overflow-x:auto;
+border:1px solid var(--rule)}
+pre code{background:none;padding:0;font-size:.86rem;line-height:1.5}
+table{border-collapse:collapse;width:100%;margin:1rem 0;display:block;overflow-x:auto}
+th,td{border:1px solid var(--rule);padding:.45rem .7rem;text-align:left;
+vertical-align:top;font-size:.92rem}
+th{background:var(--code-bg);font-weight:600}
+blockquote{margin:1rem 0;padding:.6rem 1rem;border-left:4px solid var(--link);
+background:var(--note-bg);border-radius:0 6px 6px 0}
+blockquote p{margin:.3rem 0}
+hr{border:0;border-top:1px solid var(--rule);margin:2.5rem 0}
+footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--rule);
+color:var(--muted);font-size:.82rem}
+.idx{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.6rem;
+margin:1.5rem 0}
+.idx a{display:block;padding:.7rem .9rem;border:1px solid var(--rule);border-radius:8px;
+text-decoration:none;background:var(--code-bg)}
+.idx a:hover{border-color:var(--link)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="lang"><a href="../../index.html">astrovodka documentation</a><a href="../../zh/index.html">简体中文</a></nav>
+<h1 id="astrovodkasources_illustris_tools--tng-data-io">astrovodka.sources._illustris_tools — TNG Data I/O</h1>
+<p>Internal utilities for reading IllustrisTNG simulation data. Reproduced from the <code>illustris_python</code> toolkit.</p>
+<h3 id="loadheaderbasepath-snapnum--dict"><code>loadHeader(basePath, snapNum)</code> → <code>dict</code></h3>
+<p>Loads group catalog header. Returns dict with: <code>HubbleParam</code>, <code>Time</code>, <code>Redshift</code>, <code>BoxSize</code>, etc.</p>
+<h3 id="loadsinglebasepath-snapnum-haloid-1-subhaloid-1--dict"><code>loadSingle(basePath, snapNum, haloID=-1, subhaloID=-1)</code> → <code>dict</code></h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>haloID</code> / <code>subhaloID</code></td>
+<td><code>int</code></td>
+<td>Mutually exclusive</td>
+</tr>
+</tbody>
+</table>
+<p>Loads all group catalog fields for one halo/subhalo. Keys: <code>SubhaloPos</code>, <code>SubhaloVel</code>, <code>SubhaloGrNr</code>, <code>SubhaloLenType</code>.</p>
+<h3 id="loadsubsetbasepath-snapnum-parttype--fields-subsetnone-mdinone-sqtrue-float32false--dict--ndarray"><code>loadSubset(basePath, snapNum, partType, *, fields, subset=None, mdi=None, sq=True, float32=False)</code> → <code>dict | ndarray</code></h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>partType</code></td>
+<td>`str \</td>
+<td>int`</td>
+<td><code>'gas'</code>(0), <code>'dm'</code>(1), <code>'star'</code>(4), <code>'bh'</code>(5)</td>
+</tr>
+<tr>
+<td><code>fields</code></td>
+<td><code>list[str]</code></td>
+<td>Field names to load</td>
+</tr>
+<tr>
+<td><code>subset</code></td>
+<td>`dict \</td>
+<td>None`</td>
+<td>From <code>getSnapOffsets</code></td>
+</tr>
+<tr>
+<td><code>mdi</code></td>
+<td>`list[int\</td>
+<td>None] \</td>
+<td>None`</td>
+<td>Multi-dim index per field</td>
+</tr>
+<tr>
+<td><code>sq</code></td>
+<td><code>bool</code></td>
+<td>Single field → return array instead of dict</td>
+</tr>
+<tr>
+<td><code>float32</code></td>
+<td><code>bool</code></td>
+<td>Downcast float64 to float32</td>
+</tr>
+</tbody>
+</table>
+<p>Handles multi-file snapshot chunks automatically.</p>
+<h3 id="getsnapoffsetsbasepath-snapnum-id-type--dict"><code>getSnapOffsets(basePath, snapNum, id, type)</code> → <code>dict</code></h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td><code>int</code></td>
+<td>Halo or subhalo ID</td>
+</tr>
+<tr>
+<td><code>type</code></td>
+<td><code>str</code></td>
+<td><code>'Group'</code> or <code>'Subhalo'</code></td>
+</tr>
+</tbody>
+</table>
+<p>Returns: <code>lenType</code>, <code>offsetType</code>, <code>snapOffsets</code>.</p>
+<h3 id="parttypenumparttype-int--str--int"><code>partTypeNum(partType: int | str)</code> → <code>int</code></h3>
+<p>Maps: gas/cells→0, dm→1, star→4, bh→5, etc.</p>
+<h3 id="snappathbasepath-snapnum-chunknum0--str"><code>snapPath(basePath, snapNum, chunkNum=0)</code> → <code>str</code></h3>
+<p>Path to snapshot HDF5 file.</p>
+<h3 id="gcpathbasepath-snapnum-chunknum0--str"><code>gcPath(basePath, snapNum, chunkNum=0)</code> → <code>str</code></h3>
+<p>Path to group catalog HDF5 file.</p>
+<h3 id="offsetpathbasepath-snapnum--str"><code>offsetPath(basePath, snapNum)</code> → <code>str</code></h3>
+<p>Path to offsets HDF5 file.</p>
+<h3 id="getnumpartheader-dict--ndarray"><code>getNumPart(header: dict)</code> → <code>ndarray</code></h3>
+<p>Number of particles per type (6 types).</p>
+<footer>astrovodka &mdash; mock resolved HI observations of IllustrisTNG galaxies.
+Generated from the Markdown sources by <code>docs/build_html.py</code>.</footer>
+</div>
+</body>
+</html>

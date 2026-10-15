@@ -1,5 +1,6 @@
 """Align particles according to their angular momentum vector."""
 
+from __future__ import annotations
 # Copied from github.com/kyleaoman/kyleaoman_utilities/kyleaoman_utilities/
 # commit-id 63dc535c5de1a0dc3caf09f98a33c9d09aa0eddc
 # Note: No git-based solution (e.g. via submodules) seems practical to include

@@ -3,7 +3,10 @@
 from __future__ import annotations
 from abc import ABCMeta, abstractmethod
 from collections.abc import Callable
-from types import EllipsisType
+try:
+    from types import EllipsisType
+except ImportError:
+    EllipsisType = type(Ellipsis)
 import numpy as np
 import astropy.units as U
 from scipy.special import erf
@@ -53,20 +56,20 @@ class _BaseSPHKernel(object):
     """
     Abstract base class for classes implementing SPH kernels to inherit from.
 
-    Classes inheriting from :class:`~martini.sph_kernels._BaseSPHKernel` must implement
-    three methods: :meth:`~martini.sph_kernels._BaseSPHKernel.kernel`,
-    :meth:`martini.sph_kernels._BaseSPHKernel._kernel_integral` and
-    :meth:`~martini.sph_kernels._BaseSPHKernel_validate`.
+    Classes inheriting from :class:`~astrovodka.sph_kernels._BaseSPHKernel` must implement
+    three methods: :meth:`~astrovodka.sph_kernels._BaseSPHKernel.kernel`,
+    :meth:`astrovodka.sph_kernels._BaseSPHKernel._kernel_integral` and
+    :meth:`~astrovodka.sph_kernels._BaseSPHKernel_validate`.
 
-    :meth:`~martini.sph_kernels._BaseSPHKernel.kernel` should define the kernel function,
+    :meth:`~astrovodka.sph_kernels._BaseSPHKernel.kernel` should define the kernel function,
     normalized such that its volume integral is ``1``.
 
-    :meth:`~martini.sph_kernels._BaseSPHKernel._kernel_integral` should define the
+    :meth:`~astrovodka.sph_kernels._BaseSPHKernel._kernel_integral` should define the
     integral of the kernel over a pixel given the distance between the pixel centre and
     the particle centre, and the smoothing length (both in units of pixels). The integral
     should be normalized so that evaluated over the entire kernel it is equal to ``1``.
 
-    :meth:`~martini.sph_kernels._BaseSPHKernel._validate` should check whether any
+    :meth:`~astrovodka.sph_kernels._BaseSPHKernel._validate` should check whether any
     approximations converge to sufficient accuracy (for instance, depending on the
     ratio of the pixel size and smoothing length), and raise an error if not. It should
     return a boolean array with ``True`` for particles which pass validation, and
@@ -90,8 +93,8 @@ class _BaseSPHKernel(object):
         Calculate kernel integral using scaled smoothing lengths.
 
         This is the method that should be called by other modules in
-        :mod:`martini`, rather than
-        :meth:`~martini.sph_kernels._BaseSPHKernel._kernel_integral`.
+        :mod:`astrovodka`, rather than
+        :meth:`~astrovodka.sph_kernels._BaseSPHKernel._kernel_integral`.
 
         Parameters
         ----------
@@ -126,7 +129,7 @@ class _BaseSPHKernel(object):
         Verify kernel accuracy using scaled smoothing lengths.
 
         This is the method that should be called by other modules in
-        :mod:`martini`, rather than :meth:`~martini.sph_kernels._BaseSPHKernel._validate`.
+        :mod:`astrovodka`, rather than :meth:`~astrovodka.sph_kernels._BaseSPHKernel._validate`.
 
         Parameters
         ----------
@@ -239,10 +242,10 @@ class _BaseSPHKernel(object):
 
         Parameters
         ----------
-        source : ~martini.sources.sph_source.SPHSource
+        source : ~astrovodka.sources.sph_source.SPHSource
             The source providing the kernel sizes.
 
-        datacube : martini.datacube.DataCube
+        datacube : astrovodka.datacube.DataCube
             The datacube providing the pixel scale.
         """
         assert source.skycoords is not None, (
@@ -320,7 +323,7 @@ class _BaseSPHKernel(object):
         and the smoothing length is sufficiently large, or sufficiently small.
         This method should check these conditions and raise errors when
         appropriate. The smoothing lengths are provided normalized to the pixel
-        size. :class:`~martini.sph_kernels._AdaptiveKernel` needs to force errors
+        size. :class:`~astrovodka.sph_kernels._AdaptiveKernel` needs to force errors
         not to raise, other classes should just define ``**kwargs`` in the signature.
 
         Parameters
@@ -462,12 +465,12 @@ class _WendlandC2Kernel(_BaseSPHKernel):
         valid = sm_lengths >= self.min_valid_size * U.pix
         if np.logical_not(valid).any():
             self._validate_error(
-                "martini.sph_kernels._WendlandC2Kernel._validate:\n"
+                "astrovodka.sph_kernels._WendlandC2Kernel._validate:\n"
                 f"SPH smoothing lengths must be >= {self.min_valid_size:f} px in "
                 "size for WendlandC2 kernel integral "
                 "approximation accuracy within 1%.\nThis check "
                 "may be disabled by calling "
-                "martini.martini.Martini.insert_source_in_cube with "
+                "astrovodka.martini.Martini.insert_source_in_cube with "
                 "'skip_validation=True', but use this with "
                 "care.\n",
                 sm_lengths,
@@ -706,12 +709,12 @@ class _WendlandC6Kernel(_BaseSPHKernel):
         valid = sm_lengths >= self.min_valid_size * U.pix
         if np.logical_not(valid).any():
             self._validate_error(
-                "martini.sph_kernels._WendlandC6Kernel._validate:\n"
+                "astrovodka.sph_kernels._WendlandC6Kernel._validate:\n"
                 f"SPH smoothing lengths must be >= {self.min_valid_size:f} px in "
                 "size for WendlandC6 kernel integral "
                 "approximation accuracy within 1%.\nThis check "
                 "may be disabled by calling "
-                "martini.martini.Martini.insert_source_in_cube with "
+                "astrovodka.martini.Martini.insert_source_in_cube with "
                 "'skip_validation=True', but use this with "
                 "care.",
                 sm_lengths,
@@ -879,12 +882,12 @@ class _CubicSplineKernel(_BaseSPHKernel):
         valid = sm_lengths >= self.min_valid_size * U.pix
         if np.logical_not(valid).any():
             self._validate_error(
-                "martini.sph_kernels._CubicSplineKernel._validate:\n"
+                "astrovodka.sph_kernels._CubicSplineKernel._validate:\n"
                 f"SPH smoothing lengths must be >= {self.min_valid_size:f} px in "
                 "size for CubicSplineKernel kernel integral "
                 "approximation accuracy within 1%.\nThis check "
                 "may be disabled by calling "
-                "martini.martini.Martini.insert_source_in_cube with "
+                "astrovodka.martini.Martini.insert_source_in_cube with "
                 "'skip_validation=True', but use this with "
                 "care.",
                 sm_lengths,
@@ -1065,12 +1068,12 @@ class _GaussianKernel(_BaseSPHKernel):
         valid = sm_lengths >= self.min_valid_size * U.pix
         if np.logical_not(valid).any():
             self._validate_error(
-                "martini.sph_kernels._GaussianKernel._validate:\n"
+                "astrovodka.sph_kernels._GaussianKernel._validate:\n"
                 f"SPH smoothing lengths must be >= {self.min_valid_size:f} px in "
                 "size for GaussianKernel kernel integral "
                 "approximation accuracy within 1%.\nThis check "
                 "may be disabled by calling "
-                "martini.martini.Martini.insert_source_in_cube with "
+                "astrovodka.martini.Martini.insert_source_in_cube with "
                 "'skip_validation=True', but use this with "
                 "care. Note that the minimum size depends on the kernel truncation.",
                 sm_lengths,
@@ -1190,11 +1193,11 @@ class DiracDeltaKernel(_BaseSPHKernel):
         valid = sm_lengths <= self.max_valid_size * U.pix
         if np.logical_not(valid).any():
             self._validate_error(
-                "martini.sph_kernels.DiracDeltaKernel._validate:\n"
+                "astrovodka.sph_kernels.DiracDeltaKernel._validate:\n"
                 f"provided smoothing scale (FWHM) must be <= {self.max_valid_size:f} "
                 "px in size for DiracDelta kernel to be a "
                 "reasonable approximation. Call "
-                "martini.martini.Martini.insert_source_in_cube with "
+                "astrovodka.martini.Martini.insert_source_in_cube with "
                 "'skip_validation=True' to override at the "
                 "cost of accuracy, but use this with care.",
                 sm_lengths,
@@ -1217,7 +1220,7 @@ class _AdaptiveKernel(_BaseSPHKernel):
     will be used to smooth the particle onto the pixel grid. Note that the
     initialized source and datacube instances are required as the smoothing
     lengths and pixel sizes must be known at initialization of the
-    :class:`~martini.sph_kernels._AdaptiveKernel` class. Note that if ``skip_validation``
+    :class:`~astrovodka.sph_kernels._AdaptiveKernel` class. Note that if ``skip_validation``
     is used, any particles with no valid kernel will default to the first kernel in the
     list.
 
@@ -1225,7 +1228,7 @@ class _AdaptiveKernel(_BaseSPHKernel):
     ----------
     kernels : iterable
         An iterable containing classes inheriting from
-        :class:`~martini.sph_kernels._BaseSPHKernel`.
+        :class:`~astrovodka.sph_kernels._BaseSPHKernel`.
         Kernels to use, ordered by decreasing priority.
     """
 
@@ -1245,10 +1248,10 @@ class _AdaptiveKernel(_BaseSPHKernel):
 
         Parameters
         ----------
-        source : ~martini.sources.sph_source.SPHSource
+        source : ~astrovodka.sources.sph_source.SPHSource
             The source providing the kernel sizes.
 
-        datacube : martini.datacube.DataCube
+        datacube : astrovodka.datacube.DataCube
             The datacube providing the pixel scale.
         """
         super()._init_sm_lengths(source=source, datacube=datacube)
@@ -1384,11 +1387,11 @@ class _AdaptiveKernel(_BaseSPHKernel):
         valid = self.kernel_indices >= 0
         if np.logical_not(valid).any():
             self._validate_error(
-                "martini.sph_kernels._AdaptiveKernel._validate:\n"
+                "astrovodka.sph_kernels._AdaptiveKernel._validate:\n"
                 "Some particles have no kernel candidate for which "
                 "accuracy passes validation.\nThis check "
                 "may be disabled by calling "
-                "martini.martini.Martini.insert_source_in_cube with "
+                "astrovodka.martini.Martini.insert_source_in_cube with "
                 "'skip_validation=True', but use this with "
                 "care.\n",
                 sm_lengths,
@@ -1585,12 +1588,12 @@ class _QuarticSplineKernel(_BaseSPHKernel):
         valid = sm_lengths >= self.min_valid_size * U.pix
         if np.logical_not(valid).any():
             self._validate_error(
-                "martini.sph_kernels._QuarticSplineKernel._validate:\n"
+                "astrovodka.sph_kernels._QuarticSplineKernel._validate:\n"
                 "SPH smoothing lengths must be >= {self.min_valid_size:f} px in "
                 "size for QuarticSplineKernel kernel integral "
                 "approximation accuracy within 1%.\nThis check "
                 "may be disabled by calling "
-                "martini.martini.Martini.insert_source_in_cube with "
+                "astrovodka.martini.Martini.insert_source_in_cube with "
                 "'skip_validation=True', but use this with "
                 "care.",
                 sm_lengths,
@@ -1620,11 +1623,11 @@ class WendlandC2Kernel(_AdaptiveKernel):
         0 &{\rm for}\;q \geq 1
         \end{cases}
 
-    This class falls back to the :class:`~martini.sph_kernels.DiracDeltaKernel` and
-    :class:`~martini.sph_kernels.GaussianKernel` when the approximation used for the
+    This class falls back to the :class:`~astrovodka.sph_kernels.DiracDeltaKernel` and
+    :class:`~astrovodka.sph_kernels.GaussianKernel` when the approximation used for the
     surface integral of the WendlandC2 kernel is not accurate to within better than 1%.
     To strictly use the WendlandC2 kernel, use
-    :class:`~martini.sph_kernels._WendlandC2Kernel` instead.
+    :class:`~astrovodka.sph_kernels._WendlandC2Kernel` instead.
     """
 
     def __init__(self) -> None:
@@ -1680,11 +1683,11 @@ class WendlandC6Kernel(_AdaptiveKernel):
         0 &{\rm for}\;q \geq 1
         \end{cases}
 
-    This class falls back to the :class:`~martini.sph_kernels.DiracDeltaKernel` and
-    :class:`~martini.sph_kernels.GaussianKernel` when the approximation used for the
+    This class falls back to the :class:`~astrovodka.sph_kernels.DiracDeltaKernel` and
+    :class:`~astrovodka.sph_kernels.GaussianKernel` when the approximation used for the
     surface integral of the WendlandC6 kernel is not accurate to within better than 1%.
     To strictly use the WendlandC6 kernel, use
-    :class:`~martini.sph_kernels._WendlandC6Kernel` instead.
+    :class:`~astrovodka.sph_kernels._WendlandC6Kernel` instead.
     """
 
     def __init__(self) -> None:
@@ -1743,11 +1746,11 @@ class CubicSplineKernel(_AdaptiveKernel):
         &{\rm for}\;q \geq 1
         \end{cases}
 
-    This class falls back to the :class:`~martini.sph_kernels.DiracDeltaKernel` and
-    :class:`~martini.sph_kernels.GaussianKernel` when the approximation used for the
+    This class falls back to the :class:`~astrovodka.sph_kernels.DiracDeltaKernel` and
+    :class:`~astrovodka.sph_kernels.GaussianKernel` when the approximation used for the
     surface integral of the cubic spline kernel is not accurate to within better than 1%.
     To strictly use the cubic spline kernel, use
-    :class:`~martini.sph_kernels._CubicSplineKernel` instead.
+    :class:`~astrovodka.sph_kernels._CubicSplineKernel` instead.
     """
 
     def __init__(self) -> None:
@@ -1809,11 +1812,11 @@ class GaussianKernel(_AdaptiveKernel):
     with :math:`\sigma=(2\sqrt{2\log(2)})^{-1}`, s.t. FWHM = 1, and
     :math:`t` being the truncation radius.
 
-    This class falls back to the :class:`~martini.sph_kernels.DiracDeltaKernel` and
-    :class:`~martini.sph_kernels.GaussianKernel` (with large truncation) when the
+    This class falls back to the :class:`~astrovodka.sph_kernels.DiracDeltaKernel` and
+    :class:`~astrovodka.sph_kernels.GaussianKernel` (with large truncation) when the
     approximation used for the surface integral of the Gaussian kernel is not accurate to
     within better than 1%. To strictly use the Gaussian kernel, use
-    :class:`~martini.sph_kernels._GaussianKernel` instead.
+    :class:`~astrovodka.sph_kernels._GaussianKernel` instead.
 
     Parameters
     ----------
@@ -1888,11 +1891,11 @@ class QuarticSplineKernel(_AdaptiveKernel):
         &{\rm for}\;q \geq 1
         \end{cases}
 
-    This class falls back to the :class:`~martini.sph_kernels.DiracDeltaKernel` and
-    :class:`~martini.sph_kernels.GaussianKernel` when the approximation used for the
+    This class falls back to the :class:`~astrovodka.sph_kernels.DiracDeltaKernel` and
+    :class:`~astrovodka.sph_kernels.GaussianKernel` when the approximation used for the
     surface integral of the quartic spline kernel is not accurate to within better
     than 1%. To strictly use the quartic spline kernel, use
-    :class:`~martini.sph_kernels._QuarticSplineKernel` instead.
+    :class:`~astrovodka.sph_kernels._QuarticSplineKernel` instead.
     """
 
     def __init__(self) -> None:

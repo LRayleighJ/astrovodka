@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>astrovodka.cosmology_utils — 宇宙学工具</title>
+<style>
+:root{--fg:#1c1e21;--muted:#5c6570;--link:#0b62c4;--rule:#d8dee6;--bg:#fff;
+--code-bg:#f4f6f8;--note-bg:#eef4fb;--head:#12395e}
+@media (prefers-color-scheme:dark){:root{--fg:#e6e8eb;--muted:#9aa5b1;--link:#69a8f5;
+--rule:#39404a;--bg:#15181c;--code-bg:#1e2227;--note-bg:#1b2733;--head:#9cc6f0}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);line-height:1.65;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",
+"Noto Sans CJK SC","Noto Sans CJK JP","PingFang SC","Microsoft YaHei",sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:2rem 1.25rem 4rem}
+nav.lang{font-size:.85rem;color:var(--muted);margin-bottom:2rem;
+display:flex;gap:1rem;flex-wrap:wrap;align-items:center}
+nav.lang a{color:var(--link);text-decoration:none}
+nav.lang a:hover{text-decoration:underline}
+h1,h2,h3,h4,h5,h6{color:var(--head);line-height:1.3;margin:2rem 0 .75rem}
+h1{font-size:1.9rem;border-bottom:2px solid var(--rule);padding-bottom:.4rem}
+h2{font-size:1.45rem;border-bottom:1px solid var(--rule);padding-bottom:.3rem}
+h3{font-size:1.15rem}h4{font-size:1rem}
+a{color:var(--link)}
+p,li{margin:.5rem 0}
+code{background:var(--code-bg);padding:.12em .38em;border-radius:4px;
+font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em}
+pre{background:var(--code-bg);padding:1rem;border-radius:8px;overflow-x:auto;
+border:1px solid var(--rule)}
+pre code{background:none;padding:0;font-size:.86rem;line-height:1.5}
+table{border-collapse:collapse;width:100%;margin:1rem 0;display:block;overflow-x:auto}
+th,td{border:1px solid var(--rule);padding:.45rem .7rem;text-align:left;
+vertical-align:top;font-size:.92rem}
+th{background:var(--code-bg);font-weight:600}
+blockquote{margin:1rem 0;padding:.6rem 1rem;border-left:4px solid var(--link);
+background:var(--note-bg);border-radius:0 6px 6px 0}
+blockquote p{margin:.3rem 0}
+hr{border:0;border-top:1px solid var(--rule);margin:2.5rem 0}
+footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--rule);
+color:var(--muted);font-size:.82rem}
+.idx{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.6rem;
+margin:1.5rem 0}
+.idx a{display:block;padding:.7rem .9rem;border:1px solid var(--rule);border-radius:8px;
+text-decoration:none;background:var(--code-bg)}
+.idx a:hover{border-color:var(--link)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="lang"><a href="../../index.html">astrovodka documentation</a><a href="../../en/index.html">English</a></nav>
+<h1 id="astrovodkacosmology_utils--宇宙学工具">astrovodka.cosmology_utils — 宇宙学工具</h1>
+<p>宇宙学距离（默认 Planck15）与 TNG 代码单位换算的辅助函数。</p>
+<h2 id="距离函数">距离函数</h2>
+<h3 id="get_cosmologycosmonone--cosmology"><code>get_cosmology(cosmo=None)</code> → <code>Cosmology</code></h3>
+<p>返回宇宙学实例（默认 Planck15）。参数非法时抛出 TypeError。</p>
+<h3 id="luminosity_distanceredshift-cosmonone--quantitympc"><code>luminosity_distance(redshift, cosmo=None)</code> → <code>Quantity[Mpc]</code></h3>
+<p>D&lt;sub&gt;L&lt;/sub&gt; — 用于流量：flux ∝ M&lt;sub&gt;HI&lt;/sub&gt; / D&lt;sub&gt;L&lt;/sub&gt;²。当 z &lt; 1e-6 时改用哈勃定律下限 cz/H₀。</p>
+<h3 id="angular_diameter_distanceredshift-cosmonone--quantitympc"><code>angular_diameter_distance(redshift, cosmo=None)</code> → <code>Quantity[Mpc]</code></h3>
+<p>D&lt;sub&gt;A&lt;/sub&gt; — 用于角尺度：θ = arctan(size / D&lt;sub&gt;A&lt;/sub&gt;)。D&lt;sub&gt;L&lt;/sub&gt;/D&lt;sub&gt;A&lt;/sub&gt; = (1+z)²。</p>
+<h3 id="comoving_distanceredshift-cosmonone--quantitympc"><code>comoving_distance(redshift, cosmo=None)</code> → <code>Quantity[Mpc]</code></h3>
+<p>视线方向的共动距离。</p>
+<h3 id="hubble_parameterredshift-cosmonone--quantitykmsmpc"><code>hubble_parameter(redshift, cosmo=None)</code> → <code>Quantity[km/s/Mpc]</code></h3>
+<p>H(z) — 红移 z 处的哈勃参数。</p>
+<h3 id="systemic_velocity_from_redshiftredshift--quantitykms"><code>systemic_velocity_from_redshift(redshift)</code> → <code>Quantity[km/s]</code></h3>
+<p>狭义相对论（运动学/光学）多普勒公式：v/c = ((1+z)²-1)/((1+z)²+1)。</p>
+<blockquote>
+<p><strong>注意：</strong> 这不是本流水线采用的约定。<code>SPHSource.vsys</code> 来自 <code>radio_velocity_from_redshift</code>，后者与 WCS 光谱轴一致。</p>
+</blockquote>
+<h3 id="radio_velocity_from_redshiftredshift-rest_freqnone--quantitykms"><code>radio_velocity_from_redshift(redshift, rest_freq=None)</code> → <code>Quantity[km/s]</code></h3>
+<p>射电约定的退行速度，v = c(1 − f&lt;sub&gt;obs&lt;/sub&gt;/f&lt;sub&gt;rest&lt;/sub&gt;) = c·z/(1+z)。 这是 <code>SpectralCoord(doppler_convention="radio")</code>、FITS <code>VRAD</code> 轴和 <code>doppler_radio</code> 所采用的 约定，因此系统速度必须用它才能与数据立方体的光谱轴对齐。与 <code>H(z)·D_C</code> 不同，它永远不会 超过 c。默认 rest_freq = HI 1.42 GHz。</p>
+<h3 id="observed_frequencyredshift-rest_freqnone--quantityhz"><code>observed_frequency(redshift, rest_freq=None)</code> → <code>Quantity[Hz]</code></h3>
+<p>f&lt;sub&gt;obs&lt;/sub&gt; = f&lt;sub&gt;rest&lt;/sub&gt;/(1+z)。默认 rest_freq = HI 1.42 GHz。</p>
+<hr>
+<h2 id="单位换算函数">单位换算函数</h2>
+<h3 id="rho_code_to_physicalrho_code-redshift-hubble_h--ndarray-gcm³"><code>rho_code_to_physical(rho_code, redshift, hubble_h)</code> → <code>ndarray [g/cm³]</code></h3>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rho_code</code></td>
+<td><code>ndarray</code></td>
+<td>TNG 密度 [1e10 M_sun/kpc³ × h²]</td>
+</tr>
+<tr>
+<td><code>redshift</code></td>
+<td><code>float</code></td>
+<td>红移</td>
+</tr>
+<tr>
+<td><code>hubble_h</code></td>
+<td><code>float</code></td>
+<td>h = H₀/100</td>
+</tr>
+</tbody>
+</table>
+<p>ρ&lt;sub&gt;phys&lt;/sub&gt; = ρ&lt;sub&gt;com&lt;/sub&gt; × (1+z)³。</p>
+<h3 id="rho_code_to_nhrho_code-redshift-hubble_h-x_h076--ndarray-cm³"><code>rho_code_to_nH(rho_code, redshift, hubble_h, X_H=0.76)</code> → <code>ndarray [cm⁻³]</code></h3>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>X_H</code></td>
+<td><code>float</code></td>
+<td>氢的质量分数（默认：0.76）</td>
+</tr>
+</tbody>
+</table>
+<p>n&lt;sub&gt;H&lt;/sub&gt; = X&lt;sub&gt;H&lt;/sub&gt; × ρ&lt;sub&gt;phys&lt;/sub&gt; / m&lt;sub&gt;p&lt;/sub&gt;。</p>
+<h3 id="calc_jeans_length_physicalu_code-rho_code-redshift-hubble_h--ndarray-kpc"><code>calc_Jeans_length_physical(u_code, rho_code, redshift, hubble_h)</code> → <code>ndarray [kpc]</code></h3>
+<p>λ&lt;sub&gt;J&lt;/sub&gt; = √(γ(γ-1)u / (Gρ))。</p>
+<h3 id="calc_sigma_neutral_physicalu_code-rho_code-f_neutral_xh-redshift-hubble_h--ndarray-m_sunkpc²"><code>calc_Sigma_neutral_physical(u_code, rho_code, f_neutral_XH, redshift, hubble_h)</code> → <code>ndarray [M_sun/kpc²]</code></h3>
+<p>Σ = ρ&lt;sub&gt;phys&lt;/sub&gt; × λ&lt;sub&gt;J&lt;/sub&gt; × f&lt;sub&gt;neutral&lt;/sub&gt; × X&lt;sub&gt;H&lt;/sub&gt;。体密度 HI 模型（<code>GD14_vol</code>、<code>K13_vol</code>）会用到它。</p>
+<footer>astrovodka &mdash; mock resolved HI observations of IllustrisTNG galaxies.
+Generated from the Markdown sources by <code>docs/build_html.py</code>.</footer>
+</div>
+</body>
+</html>

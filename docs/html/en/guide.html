@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>User guide</title>
+<style>
+:root{--fg:#1c1e21;--muted:#5c6570;--link:#0b62c4;--rule:#d8dee6;--bg:#fff;
+--code-bg:#f4f6f8;--note-bg:#eef4fb;--head:#12395e}
+@media (prefers-color-scheme:dark){:root{--fg:#e6e8eb;--muted:#9aa5b1;--link:#69a8f5;
+--rule:#39404a;--bg:#15181c;--code-bg:#1e2227;--note-bg:#1b2733;--head:#9cc6f0}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);line-height:1.65;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",
+"Noto Sans CJK SC","Noto Sans CJK JP","PingFang SC","Microsoft YaHei",sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:2rem 1.25rem 4rem}
+nav.lang{font-size:.85rem;color:var(--muted);margin-bottom:2rem;
+display:flex;gap:1rem;flex-wrap:wrap;align-items:center}
+nav.lang a{color:var(--link);text-decoration:none}
+nav.lang a:hover{text-decoration:underline}
+h1,h2,h3,h4,h5,h6{color:var(--head);line-height:1.3;margin:2rem 0 .75rem}
+h1{font-size:1.9rem;border-bottom:2px solid var(--rule);padding-bottom:.4rem}
+h2{font-size:1.45rem;border-bottom:1px solid var(--rule);padding-bottom:.3rem}
+h3{font-size:1.15rem}h4{font-size:1rem}
+a{color:var(--link)}
+p,li{margin:.5rem 0}
+code{background:var(--code-bg);padding:.12em .38em;border-radius:4px;
+font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em}
+pre{background:var(--code-bg);padding:1rem;border-radius:8px;overflow-x:auto;
+border:1px solid var(--rule)}
+pre code{background:none;padding:0;font-size:.86rem;line-height:1.5}
+table{border-collapse:collapse;width:100%;margin:1rem 0;display:block;overflow-x:auto}
+th,td{border:1px solid var(--rule);padding:.45rem .7rem;text-align:left;
+vertical-align:top;font-size:.92rem}
+th{background:var(--code-bg);font-weight:600}
+blockquote{margin:1rem 0;padding:.6rem 1rem;border-left:4px solid var(--link);
+background:var(--note-bg);border-radius:0 6px 6px 0}
+blockquote p{margin:.3rem 0}
+hr{border:0;border-top:1px solid var(--rule);margin:2.5rem 0}
+footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--rule);
+color:var(--muted);font-size:.82rem}
+.idx{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.6rem;
+margin:1.5rem 0}
+.idx a{display:block;padding:.7rem .9rem;border:1px solid var(--rule);border-radius:8px;
+text-decoration:none;background:var(--code-bg)}
+.idx a:hover{border-color:var(--link)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="lang"><a href="../index.html">astrovodka documentation</a><a href="../zh/index.html">简体中文</a></nav>
+<h1 id="user-guide">User guide</h1>
+<p>How astrovodka works, and how to drive it. For installation see <a href="en/installation.html">installation.md</a>; for per-class signatures see the <a href="en/api/index.html">API reference</a>; for the HI/H₂ models in depth see <a href="en/hi-models.html">hi-models.md</a>.</p>
+<ul>
+<li><a href="#the-pipeline">The pipeline</a></li>
+<li><a href="#sources">Sources</a></li>
+<li><a href="#two-distances">Two distances</a></li>
+<li><a href="#the-data-cube">The data cube</a></li>
+<li><a href="#sub-modules">Sub-modules</a></li>
+<li><a href="#a-complete-worked-example">A complete worked example</a></li>
+<li><a href="#common-tasks">Common tasks</a></li>
+<li><a href="#pitfalls">Pitfalls</a></li>
+<li><a href="#differences-from-martini">Differences from MARTINI</a></li>
+</ul>
+<hr>
+<h2 id="the-pipeline">The pipeline</h2>
+<p>astrovodka is object-oriented: <code>Martini</code> holds a <strong>source</strong>, a <strong>data cube</strong>, and three sub-modules, and runs them in order.</p>
+<pre><code>    source ────────┐
+    datacube ──────┤
+    beam ──────────┤     ┌──────────────────────┐
+    noise ─────────┼────▶│       Martini        │
+    spectral_model ┤     └──────────────────────┘
+    sph_kernel ────┘        │      │       │
+                            ▼      ▼       ▼
+                   insert_source_in_cube()  →  particles onto pixels
+                            │
+                      add_noise()           →  (optional) noise per pixel
+                            │
+                    convolve_beam()         →  (optional) telescope beam
+                            │
+                      write_fits()          →  a cube you can open in DS9</code></pre>
+<p>Each step is a separate method, so you can stop after any of them. Stopping after <code>insert_source_in_cube()</code> gives a noiseless, unconvolved cube — which is what you want when checking the physics, because there is then no noise to compete with the signal and no beam to redistribute it.</p>
+<h2 id="sources">Sources</h2>
+<p>A source abstracts "the thing that emits 21 cm line radiation". Two are implemented.</p>
+<h3 id="sphsource--any-sph-data"><code>SPHSource</code> — any SPH data</h3>
+<pre><code class="language-python">SPHSource(
+    redshift=0.01, ra=30*U.deg, dec=45*U.deg,
+    T_g=..., mHI_g=..., xyz_g=..., vxyz_g=..., hsm_g=...,
+)</code></pre>
+<p>The particle arrays are ordinary <code>astropy</code> quantities:</p>
+<table>
+<thead>
+<tr>
+<th>Array</th>
+<th>Unit</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>xyz_g</code></td>
+<td>kpc</td>
+<td>Positions. <strong><code>x</code> is the line of sight</strong>; <code>y</code>-<code>z</code> is the sky plane</td>
+</tr>
+<tr>
+<td><code>vxyz_g</code></td>
+<td>km/s</td>
+<td>Velocities, same axis convention</td>
+</tr>
+<tr>
+<td><code>mHI_g</code></td>
+<td>M☉</td>
+<td>HI mass per particle</td>
+</tr>
+<tr>
+<td><code>T_g</code></td>
+<td>K</td>
+<td>Temperature, used by thermal line widths</td>
+</tr>
+<tr>
+<td><code>hsm_g</code></td>
+<td>kpc</td>
+<td>SPH smoothing length <strong>as an FWHM</strong>, not a kernel radius</td>
+</tr>
+</tbody>
+</table>
+<p>That last point deserves emphasis. Simulations disagree about what a "smoothing length" is — some store the radius at which the kernel reaches zero, some store the FWHM, some store something else again. MARTINI chose FWHM as its convention. If you feed it a kernel radius instead, every particle will be smoothed over a different-sized region than intended and nothing will raise an error.</p>
+<h3 id="tngsource--illustristng-from-local-disk"><code>TNGSource</code> — IllustrisTNG, from local disk</h3>
+<pre><code class="language-python">TNGSource(
+    basePath=&quot;/path/to/TNG/TNG-100/&quot;,
+    snapNum=99, subID=113,
+    hi_model=&quot;K13_vol&quot;,
+    observed_redshift=0.02,
+)</code></pre>
+<p><code>TNGSource</code> reads the snapshot directly off the filesystem, runs the chosen HI/H₂ model, and passes the result to <code>SPHSource</code>. It adds:</p>
+<ul>
+<li><strong><code>hi_model</code></strong> — one of the four models (see <a href="en/hi-models.html">hi-models.md</a>). Validated <em>before</em> any disk I/O, so a typo fails immediately rather than after loading several GB.</li>
+<li><strong><code>observed_redshift</code></strong> — see <a href="#two-distances">Two distances</a>.</li>
+<li><strong><code>load_subhalo_only</code></strong> (default <code>True</code>) — load just the subhalo's particles rather than its entire FOF group. Much faster, and usually what you want.</li>
+<li><strong>DM centre-of-mass centring</strong>, rather than the catalog's <code>SubhaloPos</code>.</li>
+</ul>
+<p>After construction, these are the attributes worth knowing:</p>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>m_HI_total</code></td>
+<td>Total HI mass [M☉]</td>
+</tr>
+<tr>
+<td><code>m_H2_g</code></td>
+<td>Per-particle H₂ mass</td>
+</tr>
+<tr>
+<td><code>f_mol_g</code>, <code>f_neutral_g</code></td>
+<td>Per-particle fractions</td>
+</tr>
+<tr>
+<td><code>u_mw_g</code></td>
+<td>Per-particle UV field, in Draine units</td>
+</tr>
+<tr>
+<td><code>hi_diagnostics</code></td>
+<td>Model diagnostics, including <code>f_gas_in_map</code></td>
+</tr>
+<tr>
+<td><code>D_L</code>, <code>D_A</code>, <code>vsys</code></td>
+<td>Cosmological distances and systemic velocity</td>
+</tr>
+<tr>
+<td><code>source_redshift</code></td>
+<td>The snapshot's own redshift</td>
+</tr>
+</tbody>
+</table>
+<h2 id="two-distances">Two distances</h2>
+<p>This is the part that most distinguishes astrovodka from MARTINI, and getting it wrong is expensive, so it is worth being explicit.</p>
+<p><strong><code>D_L</code> and <code>D_A</code> are not interchangeable, and they differ by <code>(1+z)²</code>.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Distance</th>
+<th>Used for</th>
+<th>Getting it wrong costs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>D_L</code>, luminosity distance</td>
+<td>Converting an HI mass to a flux; normalising the cube</td>
+<td><code>(1+z)⁴</code></td>
+</tr>
+<tr>
+<td><code>D_A</code>, angular diameter distance</td>
+<td>Every angular size: pixel scale, source extent, beam</td>
+<td><code>(1+z)²</code></td>
+</tr>
+</tbody>
+</table>
+<p>astrovodka computes both from <code>astropy.cosmology.Planck15</code> (or a cosmology you pass in) and applies each where it belongs.</p>
+<h3 id="the-two-redshifts">The two redshifts</h3>
+<p>A TNG snapshot has one redshift, and it is not always the redshift you want to observe at. A <code>z ≈ 0</code> snapshot has a vanishing angular diameter distance, so a galaxy in it subtends essentially no angle and cannot be resolved at all.</p>
+<p><code>observed_redshift</code> separates the two roles:</p>
+<table>
+<thead>
+<tr>
+<th>Quantity</th>
+<th>Comes from</th>
+<th>Because</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Unit conversions, UV background, the HI/H₂ model</td>
+<td>the <strong>snapshot's</strong> redshift</td>
+<td>that is the physical state of the gas</td>
+</tr>
+<tr>
+<td><code>D_L</code>, <code>D_A</code>, <code>vsys</code>, angular sizes, flux</td>
+<td><code>observed_redshift</code></td>
+<td>that is the geometry of the observation</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-python">source = TNGSource(basePath=..., snapNum=99, subID=113, observed_redshift=0.05)
+print(source.source_redshift)   # ~0, the snapshot
+print(source.D_L, source.D_A)   # computed at z = 0.05</code></pre>
+<h3 id="the-systemic-velocity-convention">The systemic velocity convention</h3>
+<p><code>vsys</code> uses the <strong>radio convention</strong>, <code>c·z/(1+z)</code>, which is what the WCS spectral axis expects. This matters more than it sounds: at z = 0.5 the alternative (<code>H(z)·D_C</code>) is 74% too large, exceeds <code>c</code> beyond z ≈ 0.79, and produces negative frequencies at high redshift.</p>
+<h2 id="the-data-cube">The data cube</h2>
+<pre><code class="language-python">DataCube(
+    n_px_x=256, n_px_y=256, n_channels=64,
+    px_size=5*U.arcsec,
+    channel_width=20*U.km/U.s,
+    spectral_centre=source.vsys,
+)</code></pre>
+<p>Two things about the spectral axis are worth knowing.</p>
+<p><strong>The unit follows <code>channel_width</code> by default.</strong> Give a velocity width and you get a velocity axis; the WCS records the conversion. Pass <code>spectral_unit="MHz"</code> to force a frequency axis instead.</p>
+<p><strong>Widths are converted differentially.</strong> A velocity width crossing to a frequency axis is converted as <code>Δf = f_rest·Δv/c</code>, not by transforming the endpoints and subtracting — the two differ, and using the wrong one silently discards almost all the signal (see <a href="#pitfalls">Pitfalls</a>).</p>
+<p>The spectral axis always spans the line, not just the gas. <code>Martini</code> prunes particles whose line profile does not fit inside the channel range, and the profile is <code>±4σ</code> wide, so the axis must be roughly <code>8σ</code> wider than the particle velocity range. For a star-forming subhalo the hottest cells reach σ ≈ 100 km/s, which means about 800 km/s of slack. Get this wrong and you lose mass silently — the recovery line drops below 100% and nothing else complains.</p>
+<p>The axis can be read back in either unit regardless of which one it was built in:</p>
+<pre><code class="language-python">datacube.velocity_channel_edges   # km/s
+datacube.frequency_channel_edges  # Hz</code></pre>
+<h2 id="sub-modules">Sub-modules</h2>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Options</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Beam</strong></td>
+<td><code>GaussianBeam(bmaj, bmin, bpa, truncate)</code></td>
+<td><code>bmin</code> defaults to <code>bmaj</code></td>
+</tr>
+<tr>
+<td><strong>Noise</strong></td>
+<td><code>GaussianNoise(rms, seed)</code></td>
+<td>Added <em>before</em> convolution, so the beam correlates it</td>
+</tr>
+<tr>
+<td><strong>Spectral model</strong></td>
+<td><code>GaussianSpectrum(sigma=...)</code>, <code>DiracDeltaSpectrum()</code></td>
+<td><code>sigma="thermal"</code> uses <code>sqrt(k_B T / m_p)</code> per particle</td>
+</tr>
+<tr>
+<td><strong>SPH kernel</strong></td>
+<td><code>CubicSplineKernel</code>, <code>WendlandC2Kernel</code>, <code>WendlandC6Kernel</code>, <code>QuarticSplineKernel</code>, <code>GaussianKernel</code>, <code>DiracDeltaKernel</code></td>
+<td>Pick the one matching your simulation's kernel</td>
+</tr>
+</tbody>
+</table>
+<p>The SPH kernels are <strong>adaptive</strong>: each falls back to <code>DiracDeltaKernel</code> and then <code>GaussianKernel(truncate=6)</code> when the pixel-to-smoothing-length ratio makes the primary approximation inaccurate, and says so. Validation warns when the ratio is marginal; <code>skip_validation=True</code> on <code>insert_source_in_cube()</code> silences it.</p>
+<h2 id="a-complete-worked-example">A complete worked example</h2>
+<pre><code class="language-python">import astropy.units as U
+from astrovodka import Martini, DataCube, SubhaloDataProducts
+from astrovodka.sources import TNGSource
+from astrovodka.beams import GaussianBeam
+from astrovodka.spectral_models import GaussianSpectrum
+from astrovodka.sph_kernels import CubicSplineKernel
+
+basePath, snapNum, subID = &quot;/path/to/TNG/TNG-100/&quot;, 99, 113
+
+# --- 3D data products: UV field, and DM/HI/H2 densities in real and redshift space
+dp = SubhaloDataProducts.from_subhalo(
+    basePath=basePath, snapNum=snapNum, subID=subID,
+    ngrid=64, hi_model=&quot;K13_vol&quot;,
+)
+dp.save_hdf5(f&quot;sub{subID}_products.hdf5&quot;)
+
+# --- The source
+source = TNGSource(
+    basePath=basePath, snapNum=snapNum, subID=subID,
+    hi_model=&quot;K13_vol&quot;, observed_redshift=0.05, load_subhalo_only=True,
+)
+
+# --- The cube. The spectral axis adopts channel_width&#x27;s units (km/s here).
+datacube = DataCube(
+    n_px_x=128, n_px_y=128, n_channels=64,
+    px_size=5 * U.arcsec,
+    channel_width=20 * U.km / U.s,
+    spectral_centre=source.vsys,
+)
+
+# --- Run it
+M = Martini(source=source, datacube=datacube,
+            beam=GaussianBeam(bmaj=15 * U.arcsec),
+            spectral_model=GaussianSpectrum(sigma=&quot;thermal&quot;),
+            sph_kernel=CubicSplineKernel())
+M.insert_source_in_cube(progressbar=False)
+M.convolve_beam()
+M.write_fits(f&quot;sub{subID}_cube.fits&quot;)
+
+# --- Read the axis back in either unit
+print(f&quot;channel 0: {datacube.frequency_channel_edges[0].to(U.MHz):.4f} MHz&quot;)
+print(f&quot;channel 0: {datacube.velocity_channel_edges[0].to(U.km/U.s):.1f} km/s&quot;)</code></pre>
+<p><code>insert_source_in_cube()</code> prints the mass it put in the cube as a fraction of the source total. <strong>Read that line.</strong> It should say 100%.</p>
+<h2 id="common-tasks">Common tasks</h2>
+<h3 id="change-the-angular-resolution">Change the angular resolution</h3>
+<p>Rebuild the cube with a different beam and pixel size. Interferometers resolve structure but miss extended emission; single dishes do the opposite.</p>
+<pre><code class="language-python">datacube = DataCube(..., px_size=beam_fwhm / 3, ...)   # ~3 pixels per beam</code></pre>
+<h3 id="put-a-galaxy-at-several-redshifts">Put a galaxy at several redshifts</h3>
+<pre><code class="language-python">for z in (0.0, 0.02, 0.05, 0.1):
+    source = TNGSource(basePath=..., snapNum=99, subID=113, observed_redshift=z)
+    ...</code></pre>
+<p>Build a fresh <code>TNGSource</code> each time. Building a cube <strong>prunes the source in place</strong>, so one source object is good for one observation — see <a href="#pitfalls">Pitfalls</a>.</p>
+<h3 id="process-many-subhalos">Process many subhalos</h3>
+<p>See <code>examples/en/batch_subhalos.py</code>. The short version: read the group catalog, filter on gas-cell count, then loop.</p>
+<pre><code class="language-python">import h5py
+with h5py.File(basePath + &quot;groups_099/fof_subhalo_tab_099.0.hdf5&quot;, &quot;r&quot;) as f:
+    n_gas = f[&quot;SubhaloLenType&quot;][:, 0]
+ids = [i for i, n in enumerate(n_gas) if 64 &lt;= n &lt;= 5000]</code></pre>
+<p><strong>Do not</strong> take the first N of the catalog — it is sorted by descending mass, so the first entries are cluster cores. Filter first.</p>
+<h3 id="match-an-existing-observation">Match an existing observation</h3>
+<pre><code class="language-python">datacube = DataCube.from_wcs(fits.getheader(&quot;observation.fits&quot;)[0])</code></pre>
+<p>The cube then inherits the real pixel grid, channel width and spectral reference system.</p>
+<h3 id="a-spectrum-instead-of-a-cube">A spectrum instead of a cube</h3>
+<p><code>GlobalProfile</code> skips the cube entirely — no beam, no noise, no SPH kernel:</p>
+<pre><code class="language-python">from astrovodka import GlobalProfile
+gp = GlobalProfile(source=source, spectral_model=GaussianSpectrum(sigma=7*U.km/U.s),
+                   n_channels=64, channel_width=10*U.km/U.s,
+                   spectral_centre=source.vsys)
+gp.plot_spectrum()</code></pre>
+<h2 id="pitfalls">Pitfalls</h2>
+<p>These four cost real debugging time. All are inherited from MARTINI.</p>
+<h3 id="1-martini-prunes-the-source-in-place">1. <code>Martini</code> prunes the source in place</h3>
+<p><code>Martini.__init__</code> calls <code>_prune_particles</code>, which removes out-of-cube particles from the <strong>source object itself</strong> via <code>source.apply_mask</code> — not just from that one observation. Build a small throwaway cube to check something, then a big science cube from the same source, and the second one silently gets a truncated source. The only symptom is that the recovery line drops below 100%.</p>
+<p><strong>One source, one observation.</strong> Rebuild the source for each cube. (The pruning does not mask <code>m_H2_g</code> along with <code>mHI_g</code>, so a pruned source is also left internally inconsistent.)</p>
+<h3 id="2-write_fits-and-write_hdf5-drop-the-padding">2. <code>write_fits</code> and <code>write_hdf5</code> drop the padding</h3>
+<p>Both call <code>datacube.drop_pad()</code>, because the padding exists for convolution. Write an intermediate product mid-pipeline and the next <code>convolve_beam()</code> raises <code>ValueError: datacube padding insufficient for beam convolution</code>. Restore it:</p>
+<pre><code class="language-python">M.datacube.add_pad(M.beam.needs_pad())</code></pre>
+<h3 id="3-a-spectral-model-cannot-be-shared-between-cubes-of-different-shape">3. A spectral model cannot be shared between cubes of different shape</h3>
+<p><code>GaussianSpectrum</code> caches its <code>spectra</code> array, and <code>Martini</code> only re-initialises when that array is <code>None</code>. Reusing one instance for a 32-channel cube and then a 42-channel one raises <code>cannot reshape array of size ...</code>.</p>
+<p><strong>Build one spectral model per <code>Martini</code>.</strong> (<code>M.init_spectra()</code> is the escape hatch if you have already hit it.)</p>
+<h3 id="4-the-spectral-axis-must-span-the-line-not-just-the-gas">4. The spectral axis must span the line, not just the gas</h3>
+<p>Covered under <a href="#the-data-cube">The data cube</a>: allow about <code>8σ</code> beyond the particle velocity range, or about 800 km/s for a star-forming subhalo.</p>
+<h2 id="differences-from-martini">Differences from MARTINI</h2>
+<p>The observation machinery is MARTINI's, vendored rather than imported. What differs:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>MARTINI</th>
+<th>astrovodka</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Distances</strong></td>
+<td>Linear Hubble law <code>v = H₀D</code></td>
+<td><code>Planck15</code>: <code>D_L</code> for flux, <code>D_A</code> for angular scales</td>
+</tr>
+<tr>
+<td><strong>Systemic velocity</strong></td>
+<td><code>h·100·D</code></td>
+<td>Radio convention <code>c·z/(1+z)</code></td>
+</tr>
+<tr>
+<td><strong>HI mass</strong></td>
+<td>Pressure-based (Leroy+2008)</td>
+<td>Four selectable Diemer+2018 models</td>
+</tr>
+<tr>
+<td><strong>H₂ mass</strong></td>
+<td>Not exposed</td>
+<td><code>source.m_H2_g</code>, per particle</td>
+</tr>
+<tr>
+<td><strong>UV field</strong></td>
+<td>—</td>
+<td>Adaptive per-galaxy FFT field, floored at the UV background</td>
+</tr>
+<tr>
+<td><strong>Redshift override</strong></td>
+<td>—</td>
+<td><code>observed_redshift</code>, decoupling physics from geometry</td>
+</tr>
+<tr>
+<td><strong>TNG access</strong></td>
+<td>Web API + JupyterLab</td>
+<td>Local disk</td>
+</tr>
+<tr>
+<td><strong>Subhalo loading</strong></td>
+<td>Full FOF group</td>
+<td>Subhalo-only (default) or the full group</td>
+</tr>
+<tr>
+<td><strong>Centring</strong></td>
+<td>Catalog <code>SubhaloPos</code></td>
+<td>DM centre of mass</td>
+</tr>
+<tr>
+<td><strong>3D products</strong></td>
+<td>—</td>
+<td><code>SubhaloDataProducts</code>: UV, DM, HI, H₂; real and redshift space</td>
+</tr>
+<tr>
+<td><strong>Sources</strong></td>
+<td>EAGLE, Simba, FIRE, Magneticum, Colibre, SWIFT, …</td>
+<td>TNG only</td>
+</tr>
+</tbody>
+</table>
+<p>Both <code>distance</code> + <code>h</code> (MARTINI's interface) and <code>redshift</code> + <code>cosmology</code> are accepted by <code>SPHSource</code>. In distance mode <code>D_L == D_A == distance</code>, so that path behaves exactly as upstream does.</p>
+<h3 id="what-is-not-implemented">What is not implemented</h3>
+<ul>
+<li><strong>Only TNG sources.</strong> Upstream's EAGLE, Simba, FIRE, Magneticum, Colibre, SWIFT and <code>CombinedSource</code> classes are absent — vendoring sources the project cannot test would mean shipping code nobody here can check.</li>
+<li><strong>Multi-galaxy observations in one cube</strong>, which is what <code>CombinedSource</code> is for.</li>
+<li><strong>Memory chunking</strong> for large subhalos — the 3D grids are built whole.</li>
+</ul>
+<footer>astrovodka &mdash; mock resolved HI observations of IllustrisTNG galaxies.
+Generated from the Markdown sources by <code>docs/build_html.py</code>.</footer>
+</div>
+</body>
+</html>

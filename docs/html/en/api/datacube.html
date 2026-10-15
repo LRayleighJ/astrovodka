@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>astrovodka.datacube — DataCube</title>
+<style>
+:root{--fg:#1c1e21;--muted:#5c6570;--link:#0b62c4;--rule:#d8dee6;--bg:#fff;
+--code-bg:#f4f6f8;--note-bg:#eef4fb;--head:#12395e}
+@media (prefers-color-scheme:dark){:root{--fg:#e6e8eb;--muted:#9aa5b1;--link:#69a8f5;
+--rule:#39404a;--bg:#15181c;--code-bg:#1e2227;--note-bg:#1b2733;--head:#9cc6f0}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);line-height:1.65;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",
+"Noto Sans CJK SC","Noto Sans CJK JP","PingFang SC","Microsoft YaHei",sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:2rem 1.25rem 4rem}
+nav.lang{font-size:.85rem;color:var(--muted);margin-bottom:2rem;
+display:flex;gap:1rem;flex-wrap:wrap;align-items:center}
+nav.lang a{color:var(--link);text-decoration:none}
+nav.lang a:hover{text-decoration:underline}
+h1,h2,h3,h4,h5,h6{color:var(--head);line-height:1.3;margin:2rem 0 .75rem}
+h1{font-size:1.9rem;border-bottom:2px solid var(--rule);padding-bottom:.4rem}
+h2{font-size:1.45rem;border-bottom:1px solid var(--rule);padding-bottom:.3rem}
+h3{font-size:1.15rem}h4{font-size:1rem}
+a{color:var(--link)}
+p,li{margin:.5rem 0}
+code{background:var(--code-bg);padding:.12em .38em;border-radius:4px;
+font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em}
+pre{background:var(--code-bg);padding:1rem;border-radius:8px;overflow-x:auto;
+border:1px solid var(--rule)}
+pre code{background:none;padding:0;font-size:.86rem;line-height:1.5}
+table{border-collapse:collapse;width:100%;margin:1rem 0;display:block;overflow-x:auto}
+th,td{border:1px solid var(--rule);padding:.45rem .7rem;text-align:left;
+vertical-align:top;font-size:.92rem}
+th{background:var(--code-bg);font-weight:600}
+blockquote{margin:1rem 0;padding:.6rem 1rem;border-left:4px solid var(--link);
+background:var(--note-bg);border-radius:0 6px 6px 0}
+blockquote p{margin:.3rem 0}
+hr{border:0;border-top:1px solid var(--rule);margin:2.5rem 0}
+footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--rule);
+color:var(--muted);font-size:.82rem}
+.idx{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.6rem;
+margin:1.5rem 0}
+.idx a{display:block;padding:.7rem .9rem;border:1px solid var(--rule);border-radius:8px;
+text-decoration:none;background:var(--code-bg)}
+.idx a:hover{border-color:var(--link)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="lang"><a href="../../index.html">astrovodka documentation</a><a href="../../zh/index.html">简体中文</a></nav>
+<h1 id="astrovodkadatacube--datacube">astrovodka.datacube — DataCube</h1>
+<p>Defines the output data cube grid: pixels, channels, and WCS.</p>
+<h2 id="module-constants">Module Constants</h2>
+<ul>
+<li><strong><code>HIfreq</code></strong> = <code>1.420405751e9 * U.Hz</code> — HI 21-cm rest frequency.</li>
+</ul>
+<h2 id="datacube">DataCube</h2>
+<h3 id="__init__self--n_px_x-n_px_y-n_channels-px_size-channel_width-spectral_centre0-kms-ra0-deg-dec0-deg-stokes_axisfalse-coordinate_frameicrs-specsysicrs-spectral_unitmhz"><code>__init__(self, *, n_px_x, n_px_y, n_channels, px_size, channel_width, spectral_centre=0 km/s, ra=0 deg, dec=0 deg, stokes_axis=False, coordinate_frame=ICRS(), specsys='icrs', spectral_unit='MHz')</code></h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>n_px_x</code></td>
+<td><code>int</code></td>
+<td>Pixel count along RA. Even integers preferred</td>
+</tr>
+<tr>
+<td><code>n_px_y</code></td>
+<td><code>int</code></td>
+<td>Pixel count along Dec</td>
+</tr>
+<tr>
+<td><code>n_channels</code></td>
+<td><code>int</code></td>
+<td>Number of spectral channels</td>
+</tr>
+<tr>
+<td><code>px_size</code></td>
+<td><code>Quantity[arcsec]</code></td>
+<td>Angular pixel size</td>
+</tr>
+<tr>
+<td><code>channel_width</code></td>
+<td>`Quantity[km/s \</td>
+<td>Hz]`</td>
+<td>Channel width</td>
+</tr>
+<tr>
+<td><code>spectral_centre</code></td>
+<td><code>Quantity</code></td>
+<td>Centre of spectral axis (default: 0 km/s)</td>
+</tr>
+<tr>
+<td><code>ra</code></td>
+<td><code>Quantity[deg]</code></td>
+<td>RA of cube centroid (default: 0)</td>
+</tr>
+<tr>
+<td><code>dec</code></td>
+<td><code>Quantity[deg]</code></td>
+<td>Dec of cube centroid (default: 0)</td>
+</tr>
+<tr>
+<td><code>stokes_axis</code></td>
+<td><code>bool</code></td>
+<td>Include Stokes axis</td>
+</tr>
+<tr>
+<td><code>coordinate_frame</code></td>
+<td><code>BaseRADecFrame</code></td>
+<td>Frame (default: ICRS)</td>
+</tr>
+<tr>
+<td><code>specsys</code></td>
+<td><code>str</code></td>
+<td>Spectral ref: <code>'icrs'</code>, <code>'gcrs'</code>, <code>'lsrk'</code></td>
+</tr>
+<tr>
+<td><code>spectral_unit</code></td>
+<td>`str \</td>
+<td>None`</td>
+<td><code>None</code> (default) adopts the units of <code>channel_width</code>; or force <code>'MHz'</code> / <code>'km/s'</code></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>All parameters keyword-only.</li>
+<li><code>spectral_unit=None</code> (default) reproduces MARTINI: a velocity <code>channel_width</code> gives a velocity axis (WCS CTYPE3=<code>VRAD</code>), a frequency one gives <code>FREQ</code>.</li>
+<li><code>spectral_unit='MHz'</code> converts a velocity <code>channel_width</code> to frequency. The conversion is <em>differential</em> (<code>Δf = f_rest·Δv/c</code>, i.e. 20 km/s → 94.76 kHz near the HI line), not the absolute frequency at that velocity.</li>
+<li><code>channel_width</code> must have frequency or velocity units, else <code>ValueError</code>.</li>
+<li>The resolved unit is stored as <code>_spectral_unit</code> and is reused by <code>copy()</code>, <code>save_state()</code>/<code>load_state()</code>, <code>from_wcs()</code> and <code>Martini.reset()</code>, so a cube's spectral axis never silently changes type.</li>
+<li>Internal <code>_array</code>: shape <code>(n_px_x, n_px_y, n_channels)</code>, unit <code>Jy/pix²</code>.</li>
+</ul>
+</blockquote>
+<hr>
+<h3 id="from_wcscls-input_wcs-specsysnone"><code>from_wcs(cls, input_wcs, specsys=None)</code></h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>input_wcs</code></td>
+<td><code>astropy.wcs.WCS</code></td>
+<td>Existing WCS (e.g., from FITS header)</td>
+</tr>
+<tr>
+<td><code>specsys</code></td>
+<td>`str \</td>
+<td>None`</td>
+<td>Spectral ref override</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> <code>DataCube</code></p>
+<blockquote>
+<p>Extracts all dimensions from WCS. Requires square pixels. Warns if RESTFRQ missing.</p>
+</blockquote>
+<hr>
+<h2 id="properties">Properties</h2>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Returns</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>wcs</code></td>
+<td><code>WCS</code></td>
+<td>Lazy-built WCS</td>
+</tr>
+<tr>
+<td><code>channel_mids</code></td>
+<td><code>SpectralCoord</code></td>
+<td>Channel centres (native unit)</td>
+</tr>
+<tr>
+<td><code>channel_edges</code></td>
+<td><code>SpectralCoord</code></td>
+<td>Channel edges (n_channels+1 values)</td>
+</tr>
+<tr>
+<td><code>velocity_channel_mids</code></td>
+<td><code>Quantity[km/s]</code></td>
+<td>Centres in km/s</td>
+</tr>
+<tr>
+<td><code>velocity_channel_edges</code></td>
+<td><code>Quantity[km/s]</code></td>
+<td>Edges in km/s</td>
+</tr>
+<tr>
+<td><code>frequency_channel_mids</code></td>
+<td><code>Quantity[Hz]</code></td>
+<td>Centres in Hz</td>
+</tr>
+<tr>
+<td><code>frequency_channel_edges</code></td>
+<td><code>Quantity[Hz]</code></td>
+<td>Edges in Hz</td>
+</tr>
+<tr>
+<td><code>spatial_slices</code></td>
+<td><code>Iterator[Quantity]</code></td>
+<td>Iterate (ny,nx) slices</td>
+</tr>
+<tr>
+<td><code>spectra</code></td>
+<td><code>Iterator[Quantity]</code></td>
+<td>Iterate (nchan,) per pixel</td>
+</tr>
+</tbody>
+</table>
+<h2 id="methods">Methods</h2>
+<h3 id="save_stateself-filename-overwritefalse"><code>save_state(self, filename, overwrite=False)</code></h3>
+<p>Save array + WCS to HDF5. Requires <code>h5py</code>.</p>
+<h3 id="load_statecls-filename"><code>load_state(cls, filename)</code></h3>
+<p>Restore from <code>save_state()</code>. Returns <code>DataCube</code>.</p>
+<h3 id="copyself--datacube"><code>copy(self)</code> → <code>DataCube</code></h3>
+<p>Deep copy.</p>
+<h3 id="add_padself-pad-tupleintint--drop_padself"><code>add_pad(self, pad: tuple[int,int])</code> / <code>drop_pad(self)</code></h3>
+<p>Padding management for beam convolution. Called internally.</p>
+<footer>astrovodka &mdash; mock resolved HI observations of IllustrisTNG galaxies.
+Generated from the Markdown sources by <code>docs/build_html.py</code>.</footer>
+</div>
+</body>
+</html>

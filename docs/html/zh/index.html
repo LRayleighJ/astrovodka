@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>astrovodka 文档</title>
+<style>
+:root{--fg:#1c1e21;--muted:#5c6570;--link:#0b62c4;--rule:#d8dee6;--bg:#fff;
+--code-bg:#f4f6f8;--note-bg:#eef4fb;--head:#12395e}
+@media (prefers-color-scheme:dark){:root{--fg:#e6e8eb;--muted:#9aa5b1;--link:#69a8f5;
+--rule:#39404a;--bg:#15181c;--code-bg:#1e2227;--note-bg:#1b2733;--head:#9cc6f0}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);line-height:1.65;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",
+"Noto Sans CJK SC","Noto Sans CJK JP","PingFang SC","Microsoft YaHei",sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:2rem 1.25rem 4rem}
+nav.lang{font-size:.85rem;color:var(--muted);margin-bottom:2rem;
+display:flex;gap:1rem;flex-wrap:wrap;align-items:center}
+nav.lang a{color:var(--link);text-decoration:none}
+nav.lang a:hover{text-decoration:underline}
+h1,h2,h3,h4,h5,h6{color:var(--head);line-height:1.3;margin:2rem 0 .75rem}
+h1{font-size:1.9rem;border-bottom:2px solid var(--rule);padding-bottom:.4rem}
+h2{font-size:1.45rem;border-bottom:1px solid var(--rule);padding-bottom:.3rem}
+h3{font-size:1.15rem}h4{font-size:1rem}
+a{color:var(--link)}
+p,li{margin:.5rem 0}
+code{background:var(--code-bg);padding:.12em .38em;border-radius:4px;
+font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em}
+pre{background:var(--code-bg);padding:1rem;border-radius:8px;overflow-x:auto;
+border:1px solid var(--rule)}
+pre code{background:none;padding:0;font-size:.86rem;line-height:1.5}
+table{border-collapse:collapse;width:100%;margin:1rem 0;display:block;overflow-x:auto}
+th,td{border:1px solid var(--rule);padding:.45rem .7rem;text-align:left;
+vertical-align:top;font-size:.92rem}
+th{background:var(--code-bg);font-weight:600}
+blockquote{margin:1rem 0;padding:.6rem 1rem;border-left:4px solid var(--link);
+background:var(--note-bg);border-radius:0 6px 6px 0}
+blockquote p{margin:.3rem 0}
+hr{border:0;border-top:1px solid var(--rule);margin:2.5rem 0}
+footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--rule);
+color:var(--muted);font-size:.82rem}
+.idx{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.6rem;
+margin:1.5rem 0}
+.idx a{display:block;padding:.7rem .9rem;border:1px solid var(--rule);border-radius:8px;
+text-decoration:none;background:var(--code-bg)}
+.idx a:hover{border-color:var(--link)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="lang"><a href="../index.html">astrovodka documentation</a><a href="../en/index.html">English</a></nav>
+<h1 id="astrovodka-文档">astrovodka 文档</h1>
+<p><strong>对 IllustrisTNG 星系的模拟分辨 HI（21 cm）观测。</strong></p>
+<p>astrovodka 把 SPH 粒子数据变成合成的射电数据立方体。它是 <a href="https://github.com/kyleaoman/martini">MARTINI</a> 的一个分支，把距离计算换 成了真正的宇宙学距离，把中性气体的划分换成了有物理依据的 HI/H₂ 模型。</p>
+<p>英文文档见 <a href="en/index.html"><code>docs/en/</code></a>。</p>
+<hr>
+<h2 id="从哪里开始">从哪里开始</h2>
+<table>
+<thead>
+<tr>
+<th>如果你想……</th>
+<th>请读</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>把它跑起来</strong></td>
+<td><a href="zh/installation.html">安装与环境配置</a> — 三条安装路径、可选依赖、离线集群、TNG 数据布局、疑难排解</td>
+</tr>
+<tr>
+<td><strong>看它实际运行</strong></td>
+<td><a href="https://github.com/LRayleighJ/astrovodka/blob/master/examples/zh/"><code>examples/zh/</code></a> — 一个基于真实 TNG-100 子晕的教程笔记本，外加可运行的脚本</td>
+</tr>
+<tr>
+<td><strong>理解 API</strong></td>
+<td><a href="zh/guide.html">用户指南</a> — 流水线、源、距离、数据立方体、常见任务，以及四个耗掉真实调试时间的陷阱</td>
+</tr>
+<tr>
+<td><strong>理解物理</strong></td>
+<td><a href="zh/hi-models.html">HI/H₂ 模型</a> — 四种模型各自计算什么、彼此如何不同、它们的假设又会在哪里带来麻烦</td>
+</tr>
+<tr>
+<td><strong>查阅签名</strong></td>
+<td><a href="zh/api/index.html">API 参考</a></td>
+</tr>
+<tr>
+<td><strong>核对论断</strong></td>
+<td><a href="zh/verification.html">验证记录</a> — 与参考实现逐位（bit-for-bit）一致，以及端到端检查</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="让它有别于-martini-的两件事">让它有别于 MARTINI 的两件事</h2>
+<p><strong>宇宙学距离。</strong> <code>D_L</code> 归一化流量，<code>D_A</code> 决定每一个角度尺度，二者都来自 <code>Planck15</code>。它们相差 <code>(1+z)²</code>，用错一个是在这里能犯的最昂贵的错误。见 <a href="zh/guide.md#两种距离">两种距离</a>。</p>
+<p><strong>四种可选的 HI/H₂ 模型。</strong> Diemer+2018 把 Gnedin &amp; Draine 2014 与 Krumholz+ 2013 两两配对，每一种都分体密度变体与投影变体，用一个关键字即 可选定。它们彼此不一致是刻意为之 — 在某个子晕上，<code>K13_vol</code> 与 <code>GD14_vol</code> 的 H₂ 质量相差约 6 倍 — 所以你用的是哪一种，本身就是结果的一部分。见 <a href="zh/hi-models.html">HI/H₂ 模型</a>。</p>
+<hr>
+<h2 id="文档地图">文档地图</h2>
+<pre><code>docs/
+├── en/                      本目录树
+│   ├── index.md             你在这里
+│   ├── installation.md      环境、依赖、TNG 数据
+│   ├── guide.md             概念与完整示例
+│   ├── hi-models.md         四种模型的深入讲解
+│   ├── verification.md      物理是如何验证的
+│   └── api/                 逐模块参考
+├── zh/                      同一目录树，中文版
+└── html/                    由上述 Markdown 生成</code></pre>
+<p>Markdown 才是事实来源。<code>docs/html/</code> 由 <code>python docs/build_html.py</code> 生成，一旦两者出现偏差，测试就会失败 — 此前手工维护的 HTML 与 Markdown 两棵树就出现过这种情况，最终在版本号和某个参数的默认值上都不一致。</p>
+<footer>astrovodka &mdash; mock resolved HI observations of IllustrisTNG galaxies.
+Generated from the Markdown sources by <code>docs/build_html.py</code>.</footer>
+</div>
+</body>
+</html>

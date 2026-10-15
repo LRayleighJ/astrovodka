@@ -8,6 +8,7 @@ Modified from MARTINI's sph_source.py to support:
 """
 
 import numpy as np
+import warnings
 from scipy.spatial.transform import Rotation
 from typing import TYPE_CHECKING
 from astropy.coordinates import (
@@ -32,7 +33,7 @@ from ..L_coords import L_coords
 from ..cosmology_utils import (
     luminosity_distance,
     angular_diameter_distance,
-    systemic_velocity_from_redshift,
+    radio_velocity_from_redshift,
     hubble_parameter,
     get_cosmology,
 )
@@ -86,7 +87,7 @@ class SPHSource(object):
     rotation : ~scipy.spatial.transform.Rotation, optional
         A rotation to apply to the source particles.
 
-    L_coords : ~martini.L_coords.L_coords, optional
+    L_coords : ~astrovodka.L_coords.L_coords, optional
         A named tuple specifying 3 angles for angular momentum alignment.
 
     ra : ~astropy.units.Quantity, optional
@@ -143,7 +144,7 @@ class SPHSource(object):
     ):
         if isinstance(rotation, dict):
             raise ValueError(
-                "The method to specify rotations in martini has been updated. "
+                "The method to specify rotations in astrovodka has been updated. "
                 "Use scipy.spatial.transform.Rotation or L_coords instead."
             )
 
@@ -163,23 +164,43 @@ class SPHSource(object):
         self._redshift = redshift
 
         if self._use_cosmology:
-            # Cosmological distance mode
+            # Cosmological distance mode. Two different distances are needed:
+            #   - D_L sets the flux scale (S ~ M_HI / D_L^2);
+            #   - D_A sets every angular scale, because particles are placed on the sky
+            #     at radius D_A, so a transverse separation dr subtends dr / D_A.
+            # They differ by (1+z)^2, which is the whole point of this mode.
             self.distance = luminosity_distance(redshift, self._cosmology)
+            self.luminosity_distance = self.distance
             self.angular_diameter_distance = angular_diameter_distance(
                 redshift, self._cosmology
             )
             self._Hz = hubble_parameter(redshift, self._cosmology)
-            # vsys must be CONSISTENT with the per-particle Hubble flow
-            # computed in _init_skycoords: v = H(z) * position_x / (1+z)
-            # After translation, position_x ~ D_L for galaxy center,
-            # so vsys = H(z) * D_L / (1+z)
-            self.vhubble = (self._Hz * self.distance / (1.0 + self._redshift)).to(U.km / U.s)
+            # `vsys` is compared against the cube's spectral axis, which is built with
+            # the *radio* Doppler convention (see `datacube`), so it must be expressed
+            # in that same convention: v = c * z / (1+z) = c * (1 - f_rest/f_obs).
+            # Anything else (e.g. H(z)*D_C, which exceeds c beyond z ~ 0.79) silently
+            # misplaces the source in the band and eventually yields negative
+            # frequencies.
+            self.vhubble = radio_velocity_from_redshift(redshift).to(U.km / U.s)
             self.vsys = self.vhubble + vpeculiar
             # h is not used in cosmology mode, but set for interface compatibility
             self.h = self._cosmology.H0.to_value(U.km / U.s / U.Mpc) / 100.0
+            # The distances are floored for z -> 0 (see `cosmology_utils`). Below that
+            # floor the angular size of the source is not physically meaningful, so
+            # warn rather than silently produce a cube containing almost nothing.
+            if self.angular_diameter_distance < 0.1 * U.Mpc:
+                warnings.warn(
+                    f"Cosmology mode with redshift={redshift:g} gives an angular "
+                    f"diameter distance of only {self.angular_diameter_distance:.3g}; "
+                    "angular scales are not meaningful this close. To mock-observe a "
+                    "z~0 galaxy at a chosen distance, pass `observed_redshift` "
+                    "(TNGSource) or use the `distance` argument instead of `redshift`.",
+                    UserWarning,
+                )
         else:
             # Original MARTINI distance mode (backward compatible)
             self.distance = distance
+            self.luminosity_distance = distance
             self.angular_diameter_distance = distance  # same in flat space
             self.h = h
             self.vhubble = (self.h * 100.0 * U.km * U.s**-1 * U.Mpc**-1) * self.distance
@@ -239,37 +260,54 @@ class SPHSource(object):
         """
         Initialize the sky coordinates of the particles.
 
-        Uses cosmological recession velocity gradient for per-particle
-        Hubble flow when in cosmology mode, or the simple linear Hubble
-        law when in distance mode.
+        The particles are placed at the *angular diameter distance*, which is the
+        distance at which a transverse separation ``dr`` subtends the angle ``dr/D_A``,
+        so that the angular size of the source is correct at any redshift. In the
+        original MARTINI distance mode ``D_A`` and ``D_L`` are the same number, so this
+        reduces to MARTINI's behaviour.
+
+        Velocities are built from a uniform systemic term plus a per-particle Hubble
+        gradient:
+
+        - Distance mode: MARTINI's original scheme - a uniform ``vpeculiar`` boost plus
+          the full linear Hubble flow ``100 h r``.
+        - Cosmology mode: a uniform ``vsys`` boost (already in the radio convention the
+          data cube uses) plus the *differential* Hubble flow within the source,
+          ``H(z) dr``, which is the radio-convention velocity difference between two
+          points separated by a physical distance ``dr``. This puts the source centroid
+          exactly at ``vsys`` and removes any dependence of the gradient on the choice
+          of ``D_A`` rather than ``D_L``.
         """
         distance_unit_vector = (
             SphericalRepresentation(self.ra, self.dec, 1)
             .represent_as(CartesianRepresentation)
             .xyz
         )
-        distance_vector = distance_unit_vector * self.distance
-        vpeculiar_vector = distance_unit_vector * self.vpeculiar
+        distance_vector = distance_unit_vector * self.angular_diameter_distance
+        # Uniform velocity added to every particle.
+        if self._use_cosmology:
+            uniform_velocity_vector = distance_unit_vector * self.vsys
+        else:
+            uniform_velocity_vector = distance_unit_vector * self.vpeculiar
 
         self.rotate(Rotation.from_euler("y", -self.dec.to_value(U.rad)))
         self.rotate(Rotation.from_euler("z", self.ra.to_value(U.rad)))
         self.translate(distance_vector)
 
         if self._use_cosmology:
-            # Cosmological Hubble flow: v = H(z) * r / (1+z)
-            # where r is the 3D position (which includes the D_L translation).
-            # This is CONSISTENT with vsys = H(z)*D_L/(1+z).
-            # For the galaxy center (r ~ D_L), v ~ vsys.
-            vhubble_vectors = (self._Hz / (1.0 + self._redshift)) * \
-                self.coordinates_g.xyz.to(U.Mpc)
-            vhubble_vectors = vhubble_vectors.to(U.km / U.s)
+            # Differential Hubble flow across the source: the radio-convention
+            # velocity difference over a physical separation dr is H(z) * dr.
+            # `coordinates_g.xyz` has shape (3, n_particles), the centroid (3,).
+            xyz = self.coordinates_g.xyz
+            centroid = distance_vector.reshape((-1,) + (1,) * (xyz.ndim - 1))
+            vhubble_vectors = (self._Hz * (xyz - centroid).to(U.Mpc)).to(U.km / U.s)
         else:
             # Original linear Hubble flow
             vhubble_vectors = (
                 self.h * 100.0 * U.km * U.s**-1 * U.Mpc**-1
             ) * self.coordinates_g.xyz
 
-        self.boost(vpeculiar_vector)
+        self.boost(uniform_velocity_vector)
         self.coordinates_g.differentials["s"] = CartesianDifferential(
             self.coordinates_g.differentials["s"].d_xyz + vhubble_vectors
         )
@@ -294,7 +332,7 @@ class SPHSource(object):
             self.coordinates_g.differentials["s"] = CartesianDifferential(
                 self.coordinates_g.differentials["s"].d_xyz - vhubble_vectors
             )
-            self.boost(-vpeculiar_vector)
+            self.boost(-uniform_velocity_vector)
             self.translate(-distance_vector)
             self.rotate(Rotation.from_euler("z", -self.ra.to_value(U.rad)))
             self.rotate(Rotation.from_euler("y", self.dec.to_value(U.rad)))
@@ -513,15 +551,17 @@ class SPHSource(object):
         if self.hsm_g is None:
             size_scale = 1
         else:
+            # `lim` is an angle on the sky, so converting it to a physical size on the
+            # plot requires the angular diameter distance (not D_L).
             size_scale = (
                 self.hsm_g.to_value(U.kpc)
-                / (lim * U.deg * self.distance).to_value(
+                / (lim * U.deg * self.angular_diameter_distance).to_value(
                     U.kpc, U.dimensionless_angles()
                 )
                 if (self.hsm_g.isscalar or mask.size <= 1)
                 else (
                     self.hsm_g[mask].to_value(U.kpc)
-                    / (lim * U.deg * self.distance).to_value(
+                    / (lim * U.deg * self.angular_diameter_distance).to_value(
                         U.kpc, U.dimensionless_angles()
                     )
                 )

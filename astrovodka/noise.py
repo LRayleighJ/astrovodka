@@ -3,7 +3,7 @@
 from abc import ABCMeta, abstractmethod
 import numpy as np
 import astropy.units as U
-from numpy.random._generator import Generator
+from numpy.random import Generator
 from astrovodka.beams import _BaseBeam
 from astrovodka.datacube import DataCube
 
@@ -12,9 +12,9 @@ class _BaseNoise(object):
     """
     Abstract base class to inherit for classes implementing a noise model.
 
-    Classes inheriting from :class:`~martini.noise._BaseNoise` must implement a
-    method :meth:`~martini.noise._BaseNoise.generate` which receives one argument,
-    a :class:`~martini.datacube.DataCube` instance. This method
+    Classes inheriting from :class:`~astrovodka.noise._BaseNoise` must implement a
+    method :meth:`~astrovodka.noise._BaseNoise.generate` which receives one argument,
+    a :class:`~astrovodka.datacube.DataCube` instance. This method
     should return an :class:`~astropy.units.Quantity` array with the same shape as the
     datacube array, and units of Jy (or compatible).
 
@@ -25,7 +25,7 @@ class _BaseNoise(object):
 
     See Also
     --------
-    martini.noise.GaussianNoise
+    astrovodka.noise.GaussianNoise
     """
 
     __metaclass__ = ABCMeta
@@ -44,20 +44,20 @@ class _BaseNoise(object):
         """
         Abstract method; create a cube containing noise.
 
-        Any random number generation should use the :attr:`~martini.noise._BaseNoise.rng`
+        Any random number generation should use the :attr:`~astrovodka.noise._BaseNoise.rng`
         generator.
 
         Parameters
         ----------
-        datacube : ~martini.datacube.DataCube
-            This method will be called passing the :class:`~martini.datacube.DataCube`
+        datacube : ~astrovodka.datacube.DataCube
+            This method will be called passing the :class:`~astrovodka.datacube.DataCube`
             instance as an argument; its attributes can thus be accessed here.
             ``datacube._array.shape`` is particularly relevant.
 
-        beam : ~martini.beams._BaseBeam
+        beam : ~astrovodka.beams._BaseBeam
             This method will be called passing the object derived from
-            :class:`~martini.beams._BaseBeam` (for example a
-            :class:`~martini.beams.GaussianBeam`) as an argument. Its attributes can thus
+            :class:`~astrovodka.beams._BaseBeam` (for example a
+            :class:`~astrovodka.beams.GaussianBeam`) as an argument. Its attributes can thus
             be accessed here. The beam size is needed to estimate the pre-convolution rms
             required to obtain the desired post-convolution rms.
 
@@ -66,7 +66,7 @@ class _BaseNoise(object):
         ~astropy.units.Quantity
             :class:`~astropy.units.Quantity`, with dimensions of flux density.
             Noise realization with size matching the
-            :attr:`~martini.datacube.DataCube._array`.
+            :attr:`~astrovodka.datacube.DataCube._array`.
         """
         pass  # pragma: no cover
 
@@ -80,7 +80,7 @@ class GaussianNoise(_BaseNoise):
     """
     Implementation of a simple Gaussian noise model.
 
-    Provides a :meth:`~martini.noise.GaussianNoise.generate` method producing a cube of
+    Provides a :meth:`~astrovodka.noise.GaussianNoise.generate` method producing a cube of
     Gaussian noise.
 
     Parameters
@@ -118,15 +118,15 @@ class GaussianNoise(_BaseNoise):
 
         Parameters
         ----------
-        datacube : ~martini.datacube.DataCube
-            This method will be called passing the :class:`~martini.datacube.DataCube`
+        datacube : ~astrovodka.datacube.DataCube
+            This method will be called passing the :class:`~astrovodka.datacube.DataCube`
             instance as an argument; its attributes can thus be accessed here.
             ``datacube._array.shape`` is particularly relevant.
 
-        beam : ~martini.beams._BaseBeam
+        beam : ~astrovodka.beams._BaseBeam
             This method will be called passing the object derived from
-            :class:`~martini.beams._BaseBeam` (for example a
-            :class:`~martini.beams.GaussianBeam`) as an argument. Its attributes can thus
+            :class:`~astrovodka.beams._BaseBeam` (for example a
+            :class:`~astrovodka.beams.GaussianBeam`) as an argument. Its attributes can thus
             be accessed here. The beam size is needed to estimate the pre-convolution rms
             required to obtain the desired post-convolution rms.
 
@@ -135,7 +135,7 @@ class GaussianNoise(_BaseNoise):
         ~astropy.units.Quantity
             :class:`~astropy.units.Quantity`, with dimensions of flux density.
             Noise realization with size matching the
-            :attr:`~martini.datacube.DataCube._array`.
+            :attr:`~astrovodka.datacube.DataCube._array`.
         """
         sig_maj = (beam.bmaj / 2 / np.sqrt(2 * np.log(2)) / datacube.px_size).to_value(
             U.dimensionless_unscaled
