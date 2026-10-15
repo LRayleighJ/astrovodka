@@ -76,8 +76,8 @@ dev = [
 Homepage = "https://github.com/LRayleighJ/astrovodka"
 Repository = "https://github.com/LRayleighJ/astrovodka"
 Issues = "https://github.com/LRayleighJ/astrovodka/issues"
-Changelog = "https://github.com/LRayleighJ/astrovodka/blob/master/CHANGELOG.md"
-Documentation = "https://github.com/LRayleighJ/astrovodka/blob/master/docs/en/index.md"
+Changelog = "https://github.com/LRayleighJ/astrovodka/blob/main/CHANGELOG.md"
+Documentation = "https://github.com/LRayleighJ/astrovodka/blob/main/docs/en/index.md"
 
 [tool.setuptools.packages.find]
 # Explicit, so that a new top-level directory can never be mistaken for a package.

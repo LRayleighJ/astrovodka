@@ -41,7 +41,7 @@ LANG_LABEL = {"en": "English", "zh": "简体中文"}
 
 # Links to files that live outside docs/ cannot be resolved from the rendered
 # tree. Point them at the repository instead of emitting a dead relative link.
-GITHUB_BLOB = "https://github.com/LRayleighJ/astrovodka/blob/master/"
+GITHUB_BLOB = "https://github.com/LRayleighJ/astrovodka/blob/main/"
 
 
 # --------------------------------------------------------------------------
