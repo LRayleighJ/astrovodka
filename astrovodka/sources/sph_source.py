@@ -10,7 +10,6 @@ Modified from MARTINI's sph_source.py to support:
 import numpy as np
 import warnings
 from scipy.spatial.transform import Rotation
-from typing import TYPE_CHECKING
 from astropy.coordinates import (
     CartesianRepresentation,
     CartesianDifferential,
@@ -20,7 +19,6 @@ from astropy.coordinates import (
     ICRS,
 )
 import astropy.units as U
-import astropy.constants as const
 from ._L_align import L_align
 from ._extra_cartesian_transforms import (
     translate,
@@ -28,8 +26,7 @@ from ._extra_cartesian_transforms import (
     affine_transform,
     affine_transform_d,
 )
-from ..datacube import HIfreq, DataCube
-from ..L_coords import L_coords
+from ..datacube import HIfreq
 from ..cosmology_utils import (
     luminosity_distance,
     angular_diameter_distance,
@@ -37,11 +34,6 @@ from ..cosmology_utils import (
     hubble_parameter,
     get_cosmology,
 )
-
-if TYPE_CHECKING:
-    from matplotlib.figure import Figure
-    from astropy.coordinates.builtin_frames.baseradec import BaseRADecFrame
-    from astropy.cosmology import Cosmology
 
 # Extend CartesianRepresentation to allow more transformations
 setattr(CartesianRepresentation, "translate", translate)

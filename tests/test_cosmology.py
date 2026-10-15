@@ -1,6 +1,5 @@
 """Test cosmological distance computations."""
 
-import numpy as np
 import astropy.units as U
 from astropy.cosmology import Planck15, FlatLambdaCDM
 from astrovodka.cosmology_utils import (
@@ -52,8 +51,10 @@ class TestDistances:
         """D_L ~ cz/H0 at low z."""
         z = 0.01
         dl = luminosity_distance(z)
-        expected = 3e5 * z / 67.74  # ~44 Mpc for Planck15
-        assert 40 < dl.value < 50
+        expected = 3e5 * z / 67.74  # ~44.3 Mpc from cz/H0
+        # Within 0.5 Mpc (~1%) of cz/H0 -- the real value is 44.60, the
+        # difference being the low-z curvature and acceleration corrections.
+        assert abs(dl.value - expected) < 0.5
 
     def test_angular_diameter_distance(self):
         """D_A = D_L / (1+z)^2 (Etherington relation)."""

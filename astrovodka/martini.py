@@ -9,7 +9,6 @@ spatial information) is desired.
 from __future__ import annotations
 
 import warnings
-import os
 from scipy.signal import fftconvolve
 import numpy as np
 import astropy.units as U

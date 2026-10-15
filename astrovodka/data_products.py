@@ -8,7 +8,6 @@ HDF5 save/load support.
 
 import numpy as np
 import astropy.units as U
-import astropy.constants as const
 from astropy.cosmology import Planck15
 
 from .himodel import (

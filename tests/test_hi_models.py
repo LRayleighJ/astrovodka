@@ -299,8 +299,7 @@ def test_fft_uv_grid_matches_the_interpolated_values():
 # --------------------------------------------------------------------------
 # the underlying physics, directly
 # --------------------------------------------------------------------------
-def _vol_inputs(n=200, seed=1, Z=0.0127):
-    rng = np.random.default_rng(seed)
+def _vol_inputs(n=200, Z=0.0127):
     return dict(
         rho_code=1e6 * np.ones(n),
         u_code=1.0 * np.ones(n),

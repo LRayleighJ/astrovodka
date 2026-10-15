@@ -7,7 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Nothing yet.
+### Fixed
+
+- `ruff check` passed locally on the narrow rule set but failed in CI with 15
+  findings, all of them genuine: unused imports (`astropy.constants` in
+  `data_products.py` and `sph_source.py`, `os` in `martini.py` and
+  `tng_source.py`, `numpy` in `test_cosmology.py`, a `TYPE_CHECKING` block in
+  `sph_source.py` whose names appeared only in docstrings), a dead `rho_g`
+  computation in `tng_source.py`, and three unused local variables.
+
+  The `sph_source.py` case was worth checking rather than deleting: `L_coords`
+  is imported from `..L_coords` and also used as a parameter name in
+  `__init__` and `rotate`, so ruff reported it as both unused and redefined.
+  Every use is the parameter — the rotation itself is done by `L_align` from
+  `._L_align` — so the import was a leftover, and removing it is safe. Verified
+  by exercising `rotate(L_coords=...)` directly.
+
+  In `tests/test_cosmology.py`, the unused `expected` was the symptom of a weak
+  test: it computed `cz/H0` and then asserted a 20%-wide range instead of
+  comparing against it. The assertion now checks agreement with the computed
+  value to within 0.5 Mpc (~1%).
 
 ## [1.0.0] — 2026-10-15
 

@@ -14,8 +14,6 @@ Unlike MARTINI's TNGSource, this class:
 
 from __future__ import annotations
 
-import os
-
 import numpy as np
 from astropy import constants as C
 from astropy import units as U
@@ -390,7 +388,6 @@ class TNGSource(SPHSource):
         # --- Compute physical properties ---
         X_H_g = data_g["GFM_Metals"]  # hydrogen mass fraction (1D, mdi=0)
         xe_g = data_g["ElectronAbundance"]
-        rho_g = data_g["Density"] << 1e10 / h * U.Msun * (a / h * U.kpc) ** -3
         u_g = data_g["InternalEnergy"] << (U.km / U.s) ** 2
 
         # Temperature from internal energy (same formula as MARTINI TNGSource)
