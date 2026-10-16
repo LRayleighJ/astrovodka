@@ -6,6 +6,7 @@ import os
 import pytest
 from astrovodka import DataCube, SubhaloDataProducts
 from astrovodka.himodel import HIModelConfig, calc_UMW_global_Faucher11
+from astrovodka.data_products import _rsd_los_halfwidth
 from astrovodka.himodel.uvfield import compute_galaxy_fft_uv
 
 
@@ -235,6 +236,7 @@ class TestSubhaloDataProducts:
         dp = SubhaloDataProducts(ngrid=64)
         assert dp.ngrid == 64
         assert dp.dm_real is None
+        assert dp.grid_edges_rsd is None
         assert dp.metadata == {}
 
     def test_hdf5_roundtrip(self):
@@ -254,6 +256,12 @@ class TestSubhaloDataProducts:
         dp.grid_edges = tuple(
             np.linspace(-10, 10, ngrid + 1) for _ in range(3)
         )
+        # the redshift-space box has its own, longer line-of-sight axis
+        dp.grid_edges_rsd = (
+            np.linspace(-100, 100, ngrid + 1),
+            np.linspace(-10, 10, ngrid + 1),
+            np.linspace(-10, 10, ngrid + 1),
+        )
         dp.metadata = {"redshift": 0.0, "hubble_h": 0.6774}
 
         test_file = "/tmp/test_dp_roundtrip.hdf5"
@@ -268,6 +276,59 @@ class TestSubhaloDataProducts:
 
             assert dp2.ngrid == ngrid
             assert len(dp2.grid_edges) == 3
+            for a, b in zip(dp.grid_edges_rsd, dp2.grid_edges_rsd):
+                assert np.array_equal(a, b)
         finally:
             if os.path.exists(test_file):
                 os.remove(test_file)
+
+    def test_hdf5_without_rsd_edges_loads_as_none(self):
+        """A file written before the RSD box existed still loads."""
+        ngrid = 8
+        dp = SubhaloDataProducts(ngrid=ngrid)
+        dp.grid_edges = tuple(np.linspace(-10, 10, ngrid + 1) for _ in range(3))
+        test_file = "/tmp/test_dp_no_rsd.hdf5"
+        try:
+            dp.save_hdf5(test_file)
+            dp2 = SubhaloDataProducts.load_hdf5(test_file)
+            assert dp2.grid_edges_rsd is None
+        finally:
+            if os.path.exists(test_file):
+                os.remove(test_file)
+
+
+class TestRsdLosHalfwidth:
+    """The line-of-sight box sizing, which is where the RSD bug lived.
+
+    Before this helper existed, the redshift-space grids shared the real-space
+    box: at z = 0 one km/s is 10 ckpc/h, so a galaxy's peculiar velocities put
+    almost every particle outside it and the grids kept 0.5% of their mass.
+    """
+
+    def test_rsd_box_holds_every_shifted_particle(self):
+        real = np.array([-3.0, 4.0, 0.5])
+        shifted = np.array([-2000.0, 1500.0, 12.0])
+        _, rsd_half = _rsd_los_halfwidth(real, shifted, centre=0.0)
+        assert rsd_half >= np.max(np.abs(shifted))
+        assert rsd_half >= np.max(np.abs(real))
+
+    def test_rsd_box_honours_the_centre(self):
+        # A box centred at 100 must reach the particles at 90 and 140.
+        _, rsd_half = _rsd_los_halfwidth(
+            np.array([95.0, 105.0]), np.array([90.0, 140.0]), centre=100.0
+        )
+        assert rsd_half >= 40.0
+
+    def test_real_extent_is_not_stretched_by_the_shift(self):
+        # The whole point of returning two values: the real-space grids keep
+        # their own, compact box.
+        real = np.array([-3.0, 4.0])
+        real_half, _ = _rsd_los_halfwidth(real, np.array([-3000.0]), centre=0.0)
+        assert real_half == pytest.approx(1.05 * 4.0)
+
+    def test_always_uses_the_larger_of_the_two(self):
+        # Shifted inside the real extent: the real extent wins.
+        real_half, rsd_half = _rsd_los_halfwidth(
+            np.array([-100.0]), np.array([1.0]), centre=0.0
+        )
+        assert rsd_half == pytest.approx(real_half)

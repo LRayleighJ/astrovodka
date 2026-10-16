@@ -43,7 +43,7 @@ from __future__ import annotations
 import numpy as np
 from astropy.cosmology import Planck15
 
-from .data_products import _cell_volume
+from .data_products import _cell_volume, _rsd_los_halfwidth
 from .himodel import (
     DEFAULT_METHOD,
     GAS_FIELDS_FULL,
@@ -625,11 +625,12 @@ class GroupDataProducts:
         half_los = half_yz
         half_los_rsd = None
         if compute_rsd:
-            half_los_rsd = max(
-                half_yz,
-                1.05 * float(np.max(np.abs(coords_rsd[:, 0] - centre[0]))),
-                1.05 * float(np.max(np.abs(dm_coords_rsd[:, 0] - centre[0]))),
+            _, half_los_rsd = _rsd_los_halfwidth(
+                np.concatenate([coords[:, 0], dm_coords[:, 0]]),
+                np.concatenate([coords_rsd[:, 0], dm_coords_rsd[:, 0]]),
+                centre[0],
             )
+            half_los_rsd = max(half_los_rsd, half_yz)
         if box_halfsize_ckpc is not None:
             pinned = max(float(box_halfsize_ckpc), 1e-3)
             half_yz = half_los = pinned

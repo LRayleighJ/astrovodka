@@ -188,17 +188,24 @@ text-decoration:none;background:var(--code-bg)}
 <tr>
 <td><code>grid_edges</code></td>
 <td>ckpc/h</td>
-<td>3 个边界数组组成的元组（长度为 ngrid+1）</td>
+<td>3 个边界数组组成的元组（长度为 ngrid+1），<strong>实空间</strong></td>
+</tr>
+<tr>
+<td><code>grid_edges_rsd</code></td>
+<td>ckpc/h</td>
+<td>同上，但属于<strong>红移空间</strong>的盒子，沿视线方向更长</td>
 </tr>
 <tr>
 <td><code>metadata</code></td>
 <td>—</td>
-<td>redshift、hubble_h、网格范围等</td>
+<td>redshift、hubble_h、网格范围、<code>f_mass_in_rsd_box_*</code> 等</td>
 </tr>
 </tbody>
 </table>
 <blockquote>
-<p><strong>红移空间公式：</strong> s&lt;sub&gt;x&lt;/sub&gt; = x + v&lt;sub&gt;los&lt;/sub&gt; / (a × H(a)) 其中 Δx = v&lt;sub&gt;los&lt;/sub&gt; / (a×H(a)) × 1000 × h [ckpc/h]。</p>
+<p><strong>红移空间公式：</strong> s&lt;sub&gt;x&lt;/sub&gt; = x + v&lt;sub&gt;los&lt;/sub&gt; / (a × H(a)) 其中 Δx = v&lt;sub&gt;los&lt;/sub&gt; / (a×H(a)) × 1000 × h [ckpc/h]，而 v&lt;sub&gt;los&lt;/sub&gt; 是<strong>相对于 DM 质心</strong>的（与盒子中心同一个参考系，见 <code>metadata['rsd_velocity_frame']</code>）。</p>
+<p><strong>两套盒子不同，因此 <code>*_rsd</code> 与 <code>*_real</code> 不能相减。</strong> 在 z = 0 时 1 km/s 对应 10 ckpc/h，所以红移空间沿视线方向的尺度由速度范围而非几何决定： 对 subhalo 113 是 2722 ckpc/h，而实空间只有 41 ckpc/h。Δx 是一个*位移*，星系尺度的 盒子装不下它——除非把实空间的网格一起拉伸，那等于让一个红移空间的选择去污染实空间数据。 要比较两者，请比较它们的视线方向剖面，或用 <code>f_mass_in_rsd_box_dm</code> / <code>_hi</code> / <code>_h2</code> 检查有没有丢质量（盒子自适应时恒为 1.000）。</p>
+<p>在 1.0.0 之前，位移用的是*绝对*速度且沿用实空间盒子，<code>*_rsd</code> 网格只保留 <strong>0.5%</strong> 的质量； 任何依赖 <code>dm_rsd − dm_real</code> 的做法，都是拿一张真实的图去减一张几乎空白的图。</p>
 </blockquote>
 <footer>astrovodka &mdash; mock resolved HI observations of IllustrisTNG galaxies.
 Generated from the Markdown sources by <code>docs/build_html.py</code>.</footer>

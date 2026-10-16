@@ -28,11 +28,16 @@ class SubhaloDataProducts:
     Contains 7 grids of shape (ngrid, ngrid, ngrid):
     - uv_field: real-space UV radiation field [Draine units]
     - dm_real, dm_rsd: comoving DM mass density [Msun / (ckpc/h)^3]
+      (the real-space grids sit on `grid_edges`, the redshift-space ones on the
+      longer `grid_edges_rsd`, so the two are not cell-by-cell comparable)
     - hi_real, hi_rsd: comoving HI mass density [Msun / (ckpc/h)^3]
     - h2_real, h2_rsd: comoving H2 mass density [Msun / (ckpc/h)^3]
 
     Real-space uses comoving coordinates (ckpc/h).
-    Redshift-space (RSD) shifts the LOS coordinate by v_los/(a*H(a)).
+    Redshift-space (RSD) shifts the LOS coordinate by v_los/(a*H(a)), with the
+    velocities measured in the object's own frame (the DM centre of mass) and on
+    its own grid box, `grid_edges_rsd` -- see `_rsd_los_halfwidth` for why that
+    box is longer than the real-space one.
     """
 
     def __init__(self, ngrid=128):
@@ -44,7 +49,8 @@ class SubhaloDataProducts:
         self.hi_rsd = None
         self.h2_real = None
         self.h2_rsd = None
-        self.grid_edges = None  # 3-tuple of 1D edge arrays [ckpc/h]
+        self.grid_edges = None  # 3-tuple of 1D edge arrays [ckpc/h], real space
+        self.grid_edges_rsd = None  # the same for the redshift-space box
         self.metadata = {}
 
     @classmethod
@@ -257,38 +263,96 @@ class SubhaloDataProducts:
         dp.metadata["grid_unit"] = "ckpc/h"
         dp.metadata["mass_unit"] = "Msun"
 
+        # --- Redshift-space positions ---
+        # s_x = x + v_los / (a H(a))  [all in comoving ckpc/h]
+        # v_los [km/s] / H_a [km/s/Mpc] = physical Mpc
+        # * 1000 -> physical kpc; * h / a -> comoving ckpc/h
+        #
+        # The velocities are taken **relative to the object's own frame** (the DM
+        # centre of mass -- the same reference the box is centred on). Applying
+        # the shift to absolute velocities instead leaves it dominated by the
+        # bulk motion: at z = 0 one km/s is 10 ckpc/h, so a 600 km/s bulk
+        # velocity displaces every particle by 6 Mpc, which is far outside a
+        # galaxy-sized box. Measured on subhalo 113, the redshift-space grids
+        # retained 0.5% of the mass before this was fixed.
+        shift_unit = 1.0e3 * h / (a * H_a)  # ckpc/h per km/s of v_los
+        v_bulk_los = float(dm_vlos.mean())
+        coords_rsd = {}
+        for name, coords, vlos in (
+            ("dm", dm_coords, dm_vlos),
+            ("gas", gas_coords, gas_vlos),
+        ):
+            shifted = coords.copy()
+            shifted[:, 0] += (vlos - v_bulk_los) * shift_unit
+            coords_rsd[name] = shifted
+
+        # --- Redshift-space box ---
+        # Same sky-plane extent, but the line-of-sight axis has to hold the
+        # shifted particles as well, and that extent comes from the velocity
+        # range rather than from the geometry. The real-space box above is left
+        # exactly as it was: keeping the two separate is what stops RSD from
+        # stretching -- and so degrading -- grids that are not about redshift
+        # space at all. Note `half_box` must not be reused as a starting point
+        # without this max(): the helper pads by 1.05 per axis, while the
+        # real-space box above uses 1.1.
+        los_shifted = np.concatenate([coords_rsd["gas"][:, 0], coords_rsd["dm"][:, 0]])
+        _, los_half_rsd = _rsd_los_halfwidth(
+            all_coords[:, 0], los_shifted, center[0], pad=1.1
+        )
+        half_box_rsd = np.array(half_box, dtype="float64")
+        half_box_rsd[0] = max(float(los_half_rsd), float(half_box[0]))
+        edges_rsd = [
+            np.linspace(
+                center[i] - half_box_rsd[i],
+                center[i] + half_box_rsd[i],
+                ngrid + 1,
+            )
+            for i in range(3)
+        ]
+        dp.grid_edges_rsd = tuple(edges_rsd)
+        dp.metadata["grid_bounds_ckpc_h_rsd"] = [
+            float(edges_rsd[0][0]), float(edges_rsd[0][-1]),
+            float(edges_rsd[1][0]), float(edges_rsd[1][-1]),
+            float(edges_rsd[2][0]), float(edges_rsd[2][-1]),
+        ]
+        dp.metadata["rsd_velocity_frame"] = "dm_com_bulk_subtracted"
+
         # --- Grid: DM real-space ---
         dm_real, _ = np.histogramdd(dm_coords, bins=edges, weights=dm_mass_arr)
         dp.dm_real = dm_real / _cell_volume(edges)  # Msun / (ckpc/h)^3
 
         # --- Grid: DM redshift-space ---
-        # RSD: s_x = x + v_los / (a * H(a))  [all in comoving ckpc/h]
-        # v_los [km/s] / H_a [km/s/Mpc] = physical Mpc
-        # * 1000 -> physical kpc; * h / a -> comoving ckpc/h
-        rsd_shift_dm = dm_vlos / (a * H_a) * 1000.0 * h  # ckpc/h
-        dm_coords_rsd = dm_coords.copy()
-        dm_coords_rsd[:, 0] += rsd_shift_dm
-        dm_rsd, _ = np.histogramdd(dm_coords_rsd, bins=edges, weights=dm_mass_arr)
-        dp.dm_rsd = dm_rsd / _cell_volume(edges)
+        dm_rsd, _ = np.histogramdd(coords_rsd["dm"], bins=edges_rsd, weights=dm_mass_arr)
+        dp.dm_rsd = dm_rsd / _cell_volume(edges_rsd)
 
         # --- Grid: HI real-space ---
         hi_real, _ = np.histogramdd(gas_coords, bins=edges, weights=m_HI_Msun)
         dp.hi_real = hi_real / _cell_volume(edges)
 
         # --- Grid: HI redshift-space ---
-        rsd_shift_gas = gas_vlos / (a * H_a) * 1000.0 * h
-        gas_coords_rsd = gas_coords.copy()
-        gas_coords_rsd[:, 0] += rsd_shift_gas
-        hi_rsd, _ = np.histogramdd(gas_coords_rsd, bins=edges, weights=m_HI_Msun)
-        dp.hi_rsd = hi_rsd / _cell_volume(edges)
+        hi_rsd, _ = np.histogramdd(coords_rsd["gas"], bins=edges_rsd, weights=m_HI_Msun)
+        dp.hi_rsd = hi_rsd / _cell_volume(edges_rsd)
 
         # --- Grid: H2 real-space ---
         h2_real, _ = np.histogramdd(gas_coords, bins=edges, weights=m_H2_Msun)
         dp.h2_real = h2_real / _cell_volume(edges)
 
         # --- Grid: H2 redshift-space ---
-        h2_rsd, _ = np.histogramdd(gas_coords_rsd, bins=edges, weights=m_H2_Msun)
-        dp.h2_rsd = h2_rsd / _cell_volume(edges)
+        h2_rsd, _ = np.histogramdd(coords_rsd["gas"], bins=edges_rsd, weights=m_H2_Msun)
+        dp.h2_rsd = h2_rsd / _cell_volume(edges_rsd)
+
+        # What the redshift-space box actually holds. It is sized to fit, so
+        # these should be 1.0; a value below it means the box no longer follows
+        # the particles and mass is being lost silently.
+        vol, vol_rsd = _cell_volume(edges), _cell_volume(edges_rsd)
+        for name, real_grid, rsd_grid in (
+            ("dm", dp.dm_real, dp.dm_rsd),
+            ("hi", dp.hi_real, dp.hi_rsd),
+            ("h2", dp.h2_real, dp.h2_rsd),
+        ):
+            dp.metadata[f"f_mass_in_rsd_box_{name}"] = float(
+                rsd_grid.sum() * vol_rsd
+            ) / max(float(real_grid.sum() * vol), 1e-30)
 
         # --- UV field ---
         # dp.uv_field was filled in above (or left None for the projected models,
@@ -331,6 +395,11 @@ class SubhaloDataProducts:
                 f.create_dataset(
                     f"grid_edges_{axis}", data=self.grid_edges[i].astype("float32")
                 )
+                if self.grid_edges_rsd is not None:
+                    f.create_dataset(
+                        f"grid_edges_{axis}_rsd",
+                        data=self.grid_edges_rsd[i].astype("float32"),
+                    )
 
             # Data grids
             for name in ["uv_field", "dm_real", "dm_rsd", "hi_real",
@@ -372,6 +441,10 @@ class SubhaloDataProducts:
             dp.grid_edges = tuple(
                 f[f"grid_edges_{axis}"][:] for axis in ["x", "y", "z"]
             )
+            if "grid_edges_x_rsd" in f:
+                dp.grid_edges_rsd = tuple(
+                    f[f"grid_edges_{axis}_rsd"][:] for axis in ["x", "y", "z"]
+                )
 
             # Data grids
             for name in ["uv_field", "dm_real", "dm_rsd", "hi_real",
@@ -383,6 +456,40 @@ class SubhaloDataProducts:
             dp.metadata = dict(f.attrs.items())
 
         return dp
+
+
+def _rsd_los_halfwidth(los_real, los_shifted, centre, pad=1.05):
+    """Line-of-sight half-widths for the real- and redshift-space boxes.
+
+    The real-space extent follows the particles. The redshift-space one follows
+    the *velocity* range, which is a different thing entirely: at z = 0 one km/s
+    is 10 ckpc/h, so even a modest velocity dispersion displaces particles by
+    Mpc and the redshift-space box has to be correspondingly longer. Returning
+    both keeps the two boxes distinct, so that a redshift-space choice cannot
+    stretch the real-space grids.
+
+    Parameters
+    ----------
+    los_real, los_shifted : array-like
+        Line-of-sight coordinates of the particles in real and redshift space
+        [ckpc/h].
+    centre : float
+        Line-of-sight coordinate of the box centre [ckpc/h].
+    pad : float, optional
+        Margin factor applied to the extents (default 1.05).
+
+    Returns
+    -------
+    real_half, rsd_half : float
+        Half-widths [ckpc/h], with ``rsd_half >= real_half``.
+    """
+    real = pad * float(
+        np.max(np.abs(np.asarray(los_real, dtype="float64") - float(centre)))
+    )
+    shifted = pad * float(
+        np.max(np.abs(np.asarray(los_shifted, dtype="float64") - float(centre)))
+    )
+    return real, max(real, shifted)
 
 
 def _cell_volume(edges):

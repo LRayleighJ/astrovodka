@@ -188,17 +188,24 @@ text-decoration:none;background:var(--code-bg)}
 <tr>
 <td><code>grid_edges</code></td>
 <td>ckpc/h</td>
-<td>Tuple of 3 edge arrays (length ngrid+1)</td>
+<td>Tuple of 3 edge arrays (length ngrid+1), <strong>real space</strong></td>
+</tr>
+<tr>
+<td><code>grid_edges_rsd</code></td>
+<td>ckpc/h</td>
+<td>The same for the <strong>redshift-space</strong> box, which is longer along the line of sight</td>
 </tr>
 <tr>
 <td><code>metadata</code></td>
 <td>—</td>
-<td>redshift, hubble_h, grid bounds, etc.</td>
+<td>redshift, hubble_h, grid bounds, <code>f_mass_in_rsd_box_*</code>, etc.</td>
 </tr>
 </tbody>
 </table>
 <blockquote>
-<p><strong>Redshift-space formula:</strong> s&lt;sub&gt;x&lt;/sub&gt; = x + v&lt;sub&gt;los&lt;/sub&gt; / (a × H(a)) where Δx = v&lt;sub&gt;los&lt;/sub&gt; / (a×H(a)) × 1000 × h [ckpc/h].</p>
+<p><strong>Redshift-space formula:</strong> s&lt;sub&gt;x&lt;/sub&gt; = x + v&lt;sub&gt;los&lt;/sub&gt; / (a × H(a)) where Δx = v&lt;sub&gt;los&lt;/sub&gt; / (a×H(a)) × 1000 × h [ckpc/h], with v&lt;sub&gt;los&lt;/sub&gt; measured <strong>relative to the DM centre of mass</strong> — the same reference the box is centred on (<code>metadata['rsd_velocity_frame']</code>).</p>
+<p><strong>The two boxes are different, so <code>*_rsd</code> and <code>*_real</code> cannot be subtracted.</strong> At z = 0 one km/s is 10 ckpc/h, so the redshift-space extent along the line of sight is set by the velocity range, not by the geometry: for subhalo 113 it is 2722 ckpc/h against 41 ckpc/h in real space. Δx is a <em>displacement</em>, so a galaxy-sized box cannot hold it without stretching the real-space grids too — which would be a redshift-space choice corrupting real-space data. Compare the two grids through their line-of-sight profiles, or use <code>f_mass_in_rsd_box_dm</code> / <code>_hi</code> / <code>_h2</code> (1.000 when the box is sized to fit) to check nothing was lost.</p>
+<p>Before 1.0.0 the shift used <em>absolute</em> velocities and kept the real-space box, so the <code>*_rsd</code> grids retained <strong>0.5%</strong> of their mass. Anything that assumed <code>dm_rsd − dm_real</code> was therefore comparing a real map against almost nothing.</p>
 </blockquote>
 <footer>astrovodka &mdash; mock resolved HI observations of IllustrisTNG galaxies.
 Generated from the Markdown sources by <code>docs/build_html.py</code>.</footer>

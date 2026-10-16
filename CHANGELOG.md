@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **`SubhaloDataProducts`' redshift-space grids retained 0.5% of their mass.**
+  Two mistakes compounded, and both were silent:
+
+  1. the line-of-sight shift was applied to *absolute* velocities rather than to
+     velocities relative to the object, and
+  2. the shifted particles were then histogrammed into the *real-space* box.
+
+  At z = 0 one km/s is 10 ckpc/h, so a galaxy's bulk motion alone displaces every
+  particle by several Mpc — far outside a box ~40 ckpc/h across. Measured on
+  subhalo 113 (TNG-100 snapshot 99, ngrid = 64): `dm_rsd` summed to 3.4e8
+  against `dm_real`'s 5.9e10, i.e. **0.58% of the mass in 82 non-zero cells out
+  of 9384**, and `hi_rsd`/`hi_real` was 0.5%. The tutorial's
+  `sub113_..._UV_and_RSD.png` panel, which plotted `dm_rsd - dm_real`, was
+  therefore showing a real map minus almost nothing.
+
+  The shift is now taken in the object's own frame (the DM centre of mass, the
+  same reference the box is centred on), and redshift space gets its own box,
+  `grid_edges_rsd`, whose line-of-sight axis is sized to hold the result —
+  2722 ckpc/h against 41 ckpc/h for subhalo 113, which is the fingers-of-God
+  effect at its real size, not an artefact. `metadata['f_mass_in_rsd_box_dm']`
+  (and `_hi`, `_h2`) now report what the box keeps and are 1.000.
+
+  **The real-space grids are untouched.** They are built before this code runs,
+  from the same expressions as before; verified bit-identical against the
+  previous commit (`dm_real`, `hi_real`, `h2_real` sums and all six grid bounds
+  unchanged), because a redshift-space choice must not reshape real-space data.
+  The consequence is that `*_rsd` and `*_real` no longer share a box and so can
+  no longer be subtracted cell by cell — the tutorial panel now compares their
+  line-of-sight profiles instead, which shows the same physics with the
+  bookkeeping visible.
+
+  The box sizing is shared with `GroupDataProducts` through
+  `data_products._rsd_los_halfwidth`, so there is one implementation of it
+  rather than two.
+
 ### Added
 
 - **`astrovodka.group_products` — FOF group / cluster-scale data products.**
