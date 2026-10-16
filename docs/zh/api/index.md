@@ -22,5 +22,6 @@ HI/H2 物理见 [HI/H2 模型](../hi-models.md)；安装见
 | [cosmology_utils](cosmology_utils.md) | 宇宙学距离与单位换算辅助函数 |
 | [himodel](himodel.md) | 四种可选 HI/H2 模型（GD14/K13，体密度/投影） |
 | [data_products](data_products.md) | SubhaloDataProducts — 三维网格化 UV/DM/HI/H2 |
+| [group_products](group_products.md) | GroupDataProducts — FOF group 的气体/暗物质，含 ISM/CGM/IGM 分类 |
 | [L_coords](L_coords.md) | 角动量对齐坐标 |
 | [_illustris_tools](_illustris_tools.md) | TNG 快照数据 I/O 工具 |

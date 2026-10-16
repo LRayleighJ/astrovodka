@@ -18,6 +18,7 @@ from it, so astrovodka has no runtime dependency on `astromartini`.
 from .martini import Martini, GlobalProfile
 from .datacube import DataCube
 from .data_products import SubhaloDataProducts
+from .group_products import GroupDataProducts
 from .L_coords import L_coords
 from .__version__ import __version__
 
@@ -26,6 +27,7 @@ __all__ = [
     "GlobalProfile",
     "DataCube",
     "SubhaloDataProducts",
+    "GroupDataProducts",
     "L_coords",
     "__version__",
 ]

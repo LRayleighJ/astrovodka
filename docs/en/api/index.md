@@ -23,5 +23,6 @@ This is the per-module reference. For the concepts behind it, start with the
 | [cosmology_utils](cosmology_utils.md) | Cosmological distance and unit conversion helpers |
 | [himodel](himodel.md) | Four selectable HI/H2 models (GD14/K13, volume/projected) |
 | [data_products](data_products.md) | SubhaloDataProducts — 3D gridded UV/DM/HI/H2 |
+| [group_products](group_products.md) | GroupDataProducts — FOF-group gas/DM with ISM/CGM/IGM |
 | [L_coords](L_coords.md) | Angular momentum alignment coordinates |
 | [_illustris_tools](_illustris_tools.md) | TNG snapshot data I/O utilities |

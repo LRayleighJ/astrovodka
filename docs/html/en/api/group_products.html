@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>astrovodka.group_products — Group/Cluster-Scale 3D Products</title>
+<style>
+:root{--fg:#1c1e21;--muted:#5c6570;--link:#0b62c4;--rule:#d8dee6;--bg:#fff;
+--code-bg:#f4f6f8;--note-bg:#eef4fb;--head:#12395e}
+@media (prefers-color-scheme:dark){:root{--fg:#e6e8eb;--muted:#9aa5b1;--link:#69a8f5;
+--rule:#39404a;--bg:#15181c;--code-bg:#1e2227;--note-bg:#1b2733;--head:#9cc6f0}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);line-height:1.65;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",
+"Noto Sans CJK SC","Noto Sans CJK JP","PingFang SC","Microsoft YaHei",sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:2rem 1.25rem 4rem}
+nav.lang{font-size:.85rem;color:var(--muted);margin-bottom:2rem;
+display:flex;gap:1rem;flex-wrap:wrap;align-items:center}
+nav.lang a{color:var(--link);text-decoration:none}
+nav.lang a:hover{text-decoration:underline}
+h1,h2,h3,h4,h5,h6{color:var(--head);line-height:1.3;margin:2rem 0 .75rem}
+h1{font-size:1.9rem;border-bottom:2px solid var(--rule);padding-bottom:.4rem}
+h2{font-size:1.45rem;border-bottom:1px solid var(--rule);padding-bottom:.3rem}
+h3{font-size:1.15rem}h4{font-size:1rem}
+a{color:var(--link)}
+p,li{margin:.5rem 0}
+code{background:var(--code-bg);padding:.12em .38em;border-radius:4px;
+font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em}
+pre{background:var(--code-bg);padding:1rem;border-radius:8px;overflow-x:auto;
+border:1px solid var(--rule)}
+pre code{background:none;padding:0;font-size:.86rem;line-height:1.5}
+table{border-collapse:collapse;width:100%;margin:1rem 0;display:block;overflow-x:auto}
+th,td{border:1px solid var(--rule);padding:.45rem .7rem;text-align:left;
+vertical-align:top;font-size:.92rem}
+th{background:var(--code-bg);font-weight:600}
+blockquote{margin:1rem 0;padding:.6rem 1rem;border-left:4px solid var(--link);
+background:var(--note-bg);border-radius:0 6px 6px 0}
+blockquote p{margin:.3rem 0}
+hr{border:0;border-top:1px solid var(--rule);margin:2.5rem 0}
+footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--rule);
+color:var(--muted);font-size:.82rem}
+.idx{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.6rem;
+margin:1.5rem 0}
+.idx a{display:block;padding:.7rem .9rem;border:1px solid var(--rule);border-radius:8px;
+text-decoration:none;background:var(--code-bg)}
+.idx a:hover{border-color:var(--link)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="lang"><a href="../../index.html">astrovodka documentation</a><a href="../../zh/index.html">简体中文</a></nav>
+<h1 id="astrovodkagroup_products--groupcluster-scale-3d-products">astrovodka.group_products — Group/Cluster-Scale 3D Products</h1>
+<p>Grids a whole <strong>FOF group</strong> — every subhalo it contains plus the group's unbound fuzz — and classifies the gas into ISM, CGM and IGM. Where <a href="en/api/data_products.html">data_products</a> shows one galaxy, this shows the group that galaxy belongs to.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Value</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ISM</code></td>
+<td><code>0</code></td>
+<td>Bound to a subhalo and within <code>k x R_ISM</code> of its centre</td>
+</tr>
+<tr>
+<td><code>CGM</code></td>
+<td><code>1</code></td>
+<td>Bound to a subhalo but outside that radius (no R&lt;sub&gt;200c&lt;/sub&gt; cut)</td>
+</tr>
+<tr>
+<td><code>IGM</code></td>
+<td><code>2</code></td>
+<td>In the group but bound to no subhalo (the fuzz)</td>
+</tr>
+</tbody>
+</table>
+<p><code>CLASS_LABELS</code> maps those integers back to <code>"ISM"</code>, <code>"CGM"</code>, <code>"IGM"</code>.</p>
+<hr>
+<h2 id="membership">Membership</h2>
+<p>Cell ownership comes from the group catalog offsets, not from a spatial guess:</p>
+<pre><code>gas cells of subhalo s  =  [Subhalo/SnapByType[s, 0], + SubhaloLenType[s, 0])
+cells of the group      =  [Group/SnapByType[g, 0],  + GroupLenType[g, 0])
+fuzz                    =  the group&#x27;s cells minus every subhalo&#x27;s</code></pre>
+<blockquote>
+<p><strong>Lengths must come from <code>SubhaloLenType</code>, never from differencing the offsets array.</strong> <code>SnapByType</code> is a cumulative start-offset table, and for the <em>last</em> subhalo of a group its next row already belongs to the next group, so the difference silently swallows that group's fuzz — on TNG-100 snapshot 99 group 59 the last subhalo has <code>SubhaloLenType == 0</code> yet a 319,249-cell step. <code>from_group</code> sums the mass of every block and compares it with <code>SubhaloMassType</code>, refusing to continue if they disagree; that check is what makes the membership trustworthy rather than assumed.</p>
+</blockquote>
+<p>The fuzz is a real component: 1.5% of the gas mass in the most massive TNG-100 group, ~10% at the mass of group 59, ~24% in smaller groups.</p>
+<hr>
+<h2 id="ism_radiusrad_gas-rad_star-k_gas10-k_star20--ndarray"><code>ism_radius(rad_gas, rad_star, k_gas=1.0, k_star=2.0)</code> → <code>ndarray</code></h2>
+<p><code>min(k_gas x R_half,gas, k_star x R_half,star)</code>, from <code>SubhaloHalfmassRadType</code> columns 0 and 4, in the same unit as the inputs (ckpc/h).</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rad_gas</code>, <code>rad_star</code></td>
+<td><code>array-like</code></td>
+<td>Gas and stellar half-mass radii [ckpc/h]</td>
+</tr>
+<tr>
+<td><code>k_gas</code>, <code>k_star</code></td>
+<td><code>float</code></td>
+<td>Multipliers (defaults 1 and 2)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>The <code>min</code> is what keeps the definition usable at group scale. A group's central subhalo has an <code>R_half,gas</code> of hundreds of ckpc/h because it contains the whole hot halo — 263 ckpc/h for TNG-100 group 59, against 19 ckpc/h for <code>R_half,star</code> — so a gas-only radius would swallow most of the group. A non-positive or non-finite radius counts as "no constraint"; if neither is usable the result is 0 and that subhalo contributes no ISM.</p>
+</blockquote>
+<hr>
+<h2 id="classify_ism_cgm_igmowner-r_gal-r_ism-nhnone-tnone-nh_maxnone-t_maxnone--ndarrayint8"><code>classify_ism_cgm_igm(owner, r_gal, r_ism, nH=None, T=None, nH_max=None, T_max=None)</code> → <code>ndarray[int8]</code></h2>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>owner</code></td>
+<td><code>ndarray of int</code></td>
+<td>Owning subhalo per cell, <code>-1</code> for the fuzz</td>
+</tr>
+<tr>
+<td><code>r_gal</code></td>
+<td><code>ndarray</code></td>
+<td>Distance to the owning subhalo's centre [ckpc/h]; ignored where <code>owner &lt; 0</code></td>
+</tr>
+<tr>
+<td><code>r_ism</code></td>
+<td><code>ndarray or float</code></td>
+<td>ISM radius per cell (already indexed by <code>owner</code>), or a scalar</td>
+</tr>
+<tr>
+<td><code>nH</code></td>
+<td><code>ndarray</code></td>
+<td>H number density [cm⁻³]; required with <code>nH_max</code></td>
+</tr>
+<tr>
+<td><code>T</code></td>
+<td><code>ndarray</code></td>
+<td>Temperature [K]; required with <code>T_max</code></td>
+</tr>
+<tr>
+<td><code>nH_max</code>, <code>T_max</code></td>
+<td><code>float</code></td>
+<td>Optional phase caps: a cell failing either is demoted out of the ISM</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>The caps are <strong>off by default</strong>, and the measurement is the reason: the population they target — dense <em>and</em> hot shocked gas, <code>n_H &gt; 0.1 cm^-3</code> with <code>T &gt; 1e6 K</code> — is 0.000 of the ISM mass in group 59, while a plain <code>n_H &lt; 100</code> cap removes 0.6%.</p>
+</blockquote>
+<hr>
+<h2 id="load_group_membersbasepath-snapnum-groupid--dict"><code>load_group_members(basePath, snapNum, groupID)</code> → <code>dict</code></h2>
+<p>The catalog records of every subhalo in the group, from the contiguous rows <code>[GroupFirstSub, + GroupNsubs)</code> of the subhalo table.</p>
+<p>Returns <code>group</code> (the FOF group's own record), <code>first</code>, <code>pos</code> (n, 3) [ckpc/h], <code>len_type</code> (n, 6), <code>mass_type</code> (n, 6) [1e10 M&lt;sub&gt;sun&lt;/sub&gt;/h], <code>mass</code>, <code>rhalf_type</code> (n, 6) [ckpc/h], <code>sfr</code>, <code>flag</code>, and <code>start</code> (n, 6) — each subhalo's start offset in the snapshot array, per particle type.</p>
+<hr>
+<h2 id="groupdataproducts"><code>GroupDataProducts</code></h2>
+<h3 id="__init__self-ngrid256"><code>__init__(self, ngrid=256)</code></h3>
+<h3 id="from_groupcls-basepath-snapnum-groupid--ngrid256-hi_modelk13_vol-hi_confignone-uv_modeadaptive_fft-compute_hitrue-compute_rsdfalse-k_gas10-k_star20-nh_maxnone-t_maxnone-igm_uvgroup-ncpu1-cosmologynone-box_halfsize_ckpcnone--groupdataproducts"><code>from_group(cls, basePath, snapNum, groupID, *, ngrid=256, hi_model='K13_vol', hi_config=None, uv_mode='adaptive_fft', compute_hi=True, compute_rsd=False, k_gas=1.0, k_star=2.0, nH_max=None, T_max=None, igm_uv='group', ncpu=1, cosmology=None, box_halfsize_ckpc=None)</code> → <code>GroupDataProducts</code></h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>basePath</code></td>
+<td><code>str</code></td>
+<td>TNG output directory (with <code>groups_&lt;snapNum&gt;/</code> and the <code>postprocessing/offsets</code> files)</td>
+</tr>
+<tr>
+<td><code>snapNum</code></td>
+<td><code>int</code></td>
+<td>Snapshot number</td>
+</tr>
+<tr>
+<td><code>groupID</code></td>
+<td><code>int</code></td>
+<td>FOF group ID (<code>haloID</code>)</td>
+</tr>
+<tr>
+<td><code>ngrid</code></td>
+<td><code>int</code></td>
+<td>Grid edge length (default 256; 128 for the most massive groups)</td>
+</tr>
+<tr>
+<td><code>hi_model</code></td>
+<td><code>str</code></td>
+<td><code>'K13_vol'</code> (default) or <code>'GD14_vol'</code>; the projected models are rejected</td>
+</tr>
+<tr>
+<td><code>hi_config</code></td>
+<td>`HIModelConfig \</td>
+<td>dict \</td>
+<td>None`</td>
+<td>Model settings; <code>h</code>, <code>z</code> and box size come from the snapshot</td>
+</tr>
+<tr>
+<td><code>uv_mode</code></td>
+<td><code>str</code></td>
+<td><code>'adaptive_fft'</code> (per subhalo) or <code>'global'</code></td>
+</tr>
+<tr>
+<td><code>compute_hi</code></td>
+<td><code>bool</code></td>
+<td><code>False</code> skips the HI/H2 model entirely</td>
+</tr>
+<tr>
+<td><code>compute_rsd</code></td>
+<td><code>bool</code></td>
+<td>Also build the redshift-space grids (off by default, see below)</td>
+</tr>
+<tr>
+<td><code>k_gas</code>, <code>k_star</code></td>
+<td><code>float</code></td>
+<td>ISM radius multipliers</td>
+</tr>
+<tr>
+<td><code>nH_max</code>, <code>T_max</code></td>
+<td>`float \</td>
+<td>None`</td>
+<td>Optional ISM phase caps</td>
+</tr>
+<tr>
+<td><code>igm_uv</code></td>
+<td><code>str</code></td>
+<td>UV field for the fuzz: <code>'group'</code> (default) or <code>'uvb'</code></td>
+</tr>
+<tr>
+<td><code>ncpu</code></td>
+<td><code>int</code></td>
+<td>Processes for the per-subhalo HI loop (needs <code>fork</code>)</td>
+</tr>
+<tr>
+<td><code>cosmology</code></td>
+<td>`Cosmology \</td>
+<td>None`</td>
+<td>For the RSD shift; default Planck15</td>
+</tr>
+<tr>
+<td><code>box_halfsize_ckpc</code></td>
+<td>`float \</td>
+<td>None`</td>
+<td>Pin the box; otherwise 1.05x the particle extent</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>HI is computed per subhalo</strong>, each in its own adaptive FFT box — the prescription the volumetric models were calibrated under. Running one FFT for the whole group would smear the field over ~30 kpc cells at cluster scale. Only gas-bearing subhalos are modelled (68 of 1710 members in group 59), so the loop is far cheaper than the subhalo count suggests. The fuzz is modelled separately with the group-wide UV field.</p>
+<p><strong>Redshift space is opt-in.</strong> At z=0 one km/s of line-of-sight velocity is 10 ckpc/h, so a group whose members span a few hundred km/s occupies several Mpc along the line of sight: group 59 needs a 17 cMpc axis against 1.9 cMpc in the sky plane. The shift is applied after subtracting the group's bulk velocity, which is the frame the mock observations are made in; without that subtraction the map comes out empty (and <code>SubhaloDataProducts</code>' redshift-space grids do lose ~99.5% of their mass for exactly that reason).</p>
+</blockquote>
+<h3 id="real-space-first">Real space first</h3>
+<p><strong>Classification happens in real space and is then carried into redshift space; it is never computed there.</strong> <code>classify_ism_cgm_igm</code> runs on the real-space coordinates, and the redshift-space grids are built by moving those same cells along the line of sight with their real-space <code>class_id</code> as the mask. The consequences, all verified on TNG-100 group 59:</p>
+<ul>
+<li><code>cells</code>, the class masses and every real-space grid are <strong>bit-identical whether or not <code>compute_rsd</code> is set</strong> — the real-space products are canonical.</li>
+<li>Each class keeps its mass exactly through the transform: real-space and redshift-space grid masses agree at a ratio of 1.000000 for ISM, CGM and IGM, and both match the metadata totals.</li>
+<li>Redshift space gets its <strong>own grid box</strong>, longer along the line of sight (<code>grid_edges_rsd</code>, plus <code>box_halfsize_ckpc_rsd</code> and <code>box_bounds_ckpc_h_rsd</code> in the metadata), so RSD never degrades the real-space resolution. The two boxes have different cell volumes, which <code>f_mass_in_rsd_box_gas</code> accounts for.</li>
+</ul>
+<hr>
+<h3 id="save_hdf5self-filename--load_hdf5cls-filename"><code>save_hdf5(self, filename)</code> / <code>load_hdf5(cls, filename)</code></h3>
+<p>Grids (LZF-compressed, chunked), the per-cell arrays, the subhalo table and the metadata. <code>None</code> metadata values are stored as the string <code>"none"</code>, and scalar subhalo entries come back as length-1 arrays, since HDF5 scalar datasets cannot carry the compression the rest of the file uses.</p>
+<hr>
+<h2 id="grid-attributes">Grid attributes</h2>
+<p>All grids are <code>(ngrid, ngrid, ngrid)</code> float32 on one shared box, with <code>x</code> along the line of sight, in M&lt;sub&gt;sun&lt;/sub&gt;/(ckpc/h)³:</p>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dm_real</code>, <code>dm_rsd</code></td>
+<td>Total dark matter</td>
+</tr>
+<tr>
+<td><code>dm_igm_real</code></td>
+<td>Dark matter bound to no subhalo</td>
+</tr>
+<tr>
+<td><code>gas_real</code>, <code>gas_rsd</code></td>
+<td>Total gas</td>
+</tr>
+<tr>
+<td><code>gas_ism_real</code>, <code>gas_cgm_real</code>, <code>gas_igm_real</code></td>
+<td>Gas by class</td>
+</tr>
+<tr>
+<td><code>hi_real</code>, <code>hi_rsd</code></td>
+<td>Neutral hydrogen</td>
+</tr>
+<tr>
+<td><code>hi_ism_real</code>, <code>hi_ism_rsd</code>, <code>hi_cgm_real</code>, <code>hi_cgm_rsd</code>, <code>hi_igm_real</code>, <code>hi_igm_rsd</code></td>
+<td>HI by class</td>
+</tr>
+<tr>
+<td><code>h2_real</code></td>
+<td>Molecular hydrogen</td>
+</tr>
+<tr>
+<td><code>t_mw</code>, <code>nh_mw</code></td>
+<td>Gas-mass-weighted temperature [K] and n&lt;sub&gt;H&lt;/sub&gt; [cm⁻³]</td>
+</tr>
+<tr>
+<td><code>grid_edges</code></td>
+<td>Tuple of 3 edge arrays [ckpc/h] for the real-space box</td>
+</tr>
+<tr>
+<td><code>grid_edges_rsd</code></td>
+<td>Same, for the redshift-space box (longer along the line of sight); <code>None</code> when <code>compute_rsd</code> is off</td>
+</tr>
+</tbody>
+</table>
+<h2 id="cells--per-cell-arrays"><code>cells</code> — per-cell arrays</h2>
+<p><code>coords_ckpc_h</code>, <code>m_gas_msun</code>, <code>m_hi_msun</code>, <code>m_h2_msun</code>, <code>nH_cm3</code>, <code>T_K</code>, <code>r_gal_ckpc_h</code>, <code>r_grp_over_r200c</code>, <code>owner</code>, <code>class_id</code>.</p>
+<blockquote>
+<p>These exist so that a re-classification, a radial profile or a zoomed re-grid does not need the snapshot again — a group-wide grid cannot resolve a galaxy, so the zoomed figures are built from these by re-histogramming a sub-volume.</p>
+</blockquote>
+<h2 id="metadata"><code>metadata</code></h2>
+<p>Group identity (<code>groupID</code>, <code>snapNum</code>, <code>redshift</code>, <code>hubble_h</code>, <code>M200c_msun</code>, <code>R200c_ckpc_h</code>, <code>R200c_kpc</code>, <code>group_pos_ckpc_h</code>, <code>Nsubs</code>, <code>N_sub_with_gas</code>), counts (<code>n_gas</code>, <code>n_dm</code>, <code>n_cells_ism/cgm/igm</code>), the mass budget (<code>m_gas_*_msun</code>, <code>m_hi_*_msun</code>, <code>m_h2_total_msun</code>, <code>m_dm_total_msun</code>, <code>m_dm_igm_total_msun</code>), the classification settings (<code>ism_k_gas</code>, <code>ism_k_star</code>, <code>ism_nH_max</code>, <code>ism_T_max</code>), the box (<code>box_halfsize_ckpc</code>, <code>box_bounds_ckpc_h</code>), the model (<code>hi_model</code>, <code>uv_mode</code>, <code>igm_uv</code>, <code>vol_fine_grid</code>) and, when RSD is on, <code>f_mass_in_rsd_box_gas</code>.</p>
+<h2 id="subhalos"><code>subhalos</code></h2>
+<p>The <code>load_group_members</code> table, so that per-subhalo quantities can be joined to the grids without re-reading the catalog.</p>
+<footer>astrovodka &mdash; mock resolved HI observations of IllustrisTNG galaxies.
+Generated from the Markdown sources by <code>docs/build_html.py</code>.</footer>
+</div>
+</body>
+</html>

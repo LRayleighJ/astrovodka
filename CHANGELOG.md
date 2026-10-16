@@ -9,6 +9,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`astrovodka.group_products` — FOF group / cluster-scale data products.**
+  `SubhaloDataProducts` grids one subhalo; `GroupDataProducts.from_group()`
+  grids a whole FOF group — every subhalo in it plus the group's unbound fuzz —
+  and splits the gas into **ISM** (bound to a subhalo and within
+  `min(k_gas R_half,gas, k_star R_half,star)` of its centre), **CGM** (bound but
+  outside that radius) and **IGM** (the fuzz). Grids cover dark matter, gas and
+  HI/H2 by class, with per-cell arrays and the member subhalo table alongside
+  them so that a re-classification or a zoomed re-grid needs no second pass over
+  the snapshot. Shipped with `examples/{en,zh}/group_cluster_viz.py` and
+  `tests/test_group_products.py`.
+
+  Membership comes from the group catalog offsets and is exact, which took three
+  details to get right, all of them documented where they bite:
+
+  1. **Lengths must come from `SubhaloLenType`, never from differencing
+     `Subhalo/SnapByType`.** `SnapByType` is a cumulative start-offset table, so
+     for the *last* subhalo of a group its next row belongs to the next group
+     and the difference silently absorbs that group's fuzz. On TNG-100 snapshot
+     99 group 59 the last subhalo has `SubhaloLenType == 0` yet a 319,249-cell
+     step. With the catalog lengths, every block's summed mass reproduces
+     `SubhaloMassType` at a ratio of 1.0000 (68 of 68 gas-bearing subhalos,
+     worst deviation 2e-4); `from_group` now checks this and refuses to continue
+     if it fails.
+  2. **A gas-only ISM radius does not survive group scale.** A group's central
+     subhalo contains the whole hot halo, so its `R_half,gas` is 263 ckpc/h
+     against 19 ckpc/h for `R_half,star` (group 59): `k x R_half,gas` at k=0.5
+     already calls 14.7% of the group's gas mass ISM. `ism_radius()` therefore
+     takes the minimum of the two.
+  3. **Redshift space needs the group's bulk velocity removed.** At z=0 one km/s
+     is 10 ckpc/h, so a group velocity of a few hundred km/s displaces every
+     particle by Mpc and the map comes out empty; subtracting it first, group 59
+     spans 17 cMpc along the line of sight against 1.9 cMpc on the sky. That
+     geometry is why `compute_rsd` defaults to False.
+
+  **Real space is classified first, and only then transformed.** The classes are
+  assigned on the real-space coordinates and carried into redshift space as a
+  mask, so nothing is ever classified in velocity space. Redshift space also
+  gets its own grid box (`grid_edges_rsd`) rather than sharing the real-space
+  one, which has two consequences, both verified on group 59: the per-cell
+  arrays, the class masses and every real-space grid are **bit-identical with
+  `compute_rsd` on or off**, and each class keeps its mass exactly through the
+  transform (real-space and redshift-space grid masses agree at 1.000000 for
+  ISM, CGM and IGM). Sharing one box would instead have stretched the
+  real-space line-of-sight axis by 9x, degrading the real-space products to
+  describe a transform that is not about them.
+
+  HI is computed **per subhalo**, each in its own adaptive FFT box — the
+  prescription the volumetric models were calibrated under — and only for
+  gas-bearing subhalos (68 of group 59's 1710 members), with the fuzz modelled
+  separately against the group-wide UV field.
+
+  The bilingual tutorials gained a matching section (**6.3**), which uses the
+  subhalo they follow as the way in: subhalo 113 turns out to live in group 0,
+  the most massive cluster in the box (17,185 subhalos, 4.5e7 gas cells), so the
+  section demonstrates the cheap way to check a group's size before loading it
+  and then works through a group that is affordable in a notebook. The section
+  asserts its own results (the classes partition the group exactly, and
+  `f_HI(ISM) > f_HI(CGM) > f_HI(IGM)`), so a change in the physics shows up as a
+  failure there rather than as a quietly different figure.
+
 - `himodel.physics.calc_temperature(u_code, X_H, xe)` — the TNG internal-energy
   to temperature conversion, extracted from `TNGSource` so the group products
   and the source share one expression. `TNGSource` now calls it; the two
