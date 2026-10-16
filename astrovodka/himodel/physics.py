@@ -18,10 +18,12 @@ import numpy as np
 
 from .config import HIModelConfig
 from .constants import (
+    BOLTZMANN,
     G_CGS,
     GAMMA,
     GAMMA_MINUS1,
     HYDROGEN_MASSFRAC,
+    PROTONMASS,
     Z_SUN,
     kpc_to_cm,
 )
@@ -53,6 +55,38 @@ def rho_code_to_nH(rho_code, X_H=HYDROGEN_MASSFRAC, *, cfg: HIModelConfig):
     """
     rho_phys = rho_code_to_physical(rho_code, cfg) * u.g / u.cm**3
     return (X_H * rho_phys / const.m_p).to(1.0 / u.cm**3).value
+
+
+def calc_temperature(u_code, X_H, xe):
+    """Gas temperature [K] from the TNG internal energy.
+
+    ``T = (gamma - 1) mu m_p u / k_B`` with the mean molecular weight
+    ``mu = 4 / (1 + 3 X_H + 4 X_H x_e)``, the standard TNG/AREPO conversion.
+
+    Parameters
+    ----------
+    u_code : ndarray
+        ``PartType0/InternalEnergy``, in code units (numerically (km/s)^2).
+    X_H : ndarray
+        Hydrogen mass fraction, ``GFM_Metals[:, 0]``.
+    xe : ndarray
+        ``PartType0/ElectronAbundance`` (dimensionless).
+
+    Returns
+    -------
+    ndarray
+        Temperature in K.
+
+    Notes
+    -----
+    This is *not* part of the ported Diemer+2018 reference chain (which never
+    needs a temperature) — it is the conversion MARTINI's TNG source has always
+    used for ``T_g``, lifted here so that the group products and
+    `~astrovodka.sources.tng_source.TNGSource` share one expression instead of
+    two copies.
+    """
+    mu = 4.0 / (1.0 + 3.0 * X_H + 4.0 * X_H * xe)
+    return GAMMA_MINUS1 * (u_code * 1e10) * mu * PROTONMASS / BOLTZMANN
 
 
 def calc_Jeans_length_physical(u_code, rho_code, cfg: HIModelConfig):
@@ -246,6 +280,7 @@ __all__ = [
     "rho_code_to_physical",
     "rho_code_to_msun_kpc3",
     "rho_code_to_nH",
+    "calc_temperature",
     "calc_Jeans_length_physical",
     "calc_Sigma_neutral_physical",
     "calc_Lcell_pc",

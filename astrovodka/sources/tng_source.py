@@ -15,7 +15,6 @@ Unlike MARTINI's TNGSource, this class:
 from __future__ import annotations
 
 import numpy as np
-from astropy import constants as C
 from astropy import units as U
 from astropy.coordinates import ICRS
 from scipy.spatial.transform import Rotation
@@ -33,6 +32,7 @@ from ..himodel import (
     is_known,
     resolve,
 )
+from ..himodel.physics import calc_temperature
 from ..sph_kernels import _CubicSplineKernel, find_fwhm
 from .sph_source import SPHSource
 from typing import TYPE_CHECKING
@@ -388,12 +388,10 @@ class TNGSource(SPHSource):
         # --- Compute physical properties ---
         X_H_g = data_g["GFM_Metals"]  # hydrogen mass fraction (1D, mdi=0)
         xe_g = data_g["ElectronAbundance"]
-        u_g = data_g["InternalEnergy"] << (U.km / U.s) ** 2
 
-        # Temperature from internal energy (same formula as MARTINI TNGSource)
-        mu_g = 4 / (1 + 3 * X_H_g + 4 * X_H_g * xe_g)
-        gamma = 5.0 / 3.0
-        T_g = (gamma - 1) / C.k_B * (u_g * mu_g * C.m_p) << U.K
+        # Temperature from the internal energy (the same expression MARTINI's TNG
+        # source uses; shared with the group products through himodel.physics).
+        T_g = calc_temperature(data_g["InternalEnergy"], X_H_g, xe_g) << U.K
 
         # Mass in physical units (Msun)
         m_g = data_g["Masses"] << 1e10 / h * U.Msun

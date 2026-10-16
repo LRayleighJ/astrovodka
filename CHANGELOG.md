@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `himodel.physics.calc_temperature(u_code, X_H, xe)` — the TNG internal-energy
+  to temperature conversion, extracted from `TNGSource` so the group products
+  and the source share one expression. `TNGSource` now calls it; the two
+  formulations agree to 6.7e-16 relative.
+
 ### Fixed
 
 - `ruff check` passed locally on the narrow rule set but failed in CI with 15
