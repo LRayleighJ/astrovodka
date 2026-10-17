@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "astrovodka"
-version = "1.0.0"
+version = "1.1.0"
 description = "Mock resolved HI (21 cm) observations of IllustrisTNG galaxies, with cosmological distances and four selectable HI/H2 models from Diemer+2018"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -41,18 +41,29 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Physics",
 ]
 dependencies = [
+    # MARTINI provides the whole observation machinery (data cubes, beams,
+    # spectral models, SPH kernels, noise, the Martini driver and SPHSource).
+    # astrovodka imports it and subclasses it; it is a required dependency, not
+    # an optional extra.
+    "astromartini>=2.1.9",
     "numpy>=1.20",
     "scipy>=1.6",
     "astropy>=5.0",
     "tqdm>=4.40",
-    # datacube.py uses typing.Self (PEP 673), which only enters the stdlib in 3.11.
+    # MARTINI's datacube uses typing.Self (PEP 673) and falls back to
+    # typing_extensions on Python < 3.11, but does not declare the dependency.
     "typing_extensions>=4.0; python_version < '3.11'",
+    # MARTINI 2.1.16+ imports `requests.models` at module level from
+    # martini.sources.tng_source, so importing martini.sources needs it even
+    # though upstream lists `requests` only under its `tngsource` extra.
+    "requests>=2.20",
 ]
 
 [project.optional-dependencies]
 # h5py is required both to *read* TNG snapshots (TNGSource, SubhaloDataProducts)
-# and to write HDF5 output, so it is needed for any TNG workflow.
-hdf5 = ["h5py>=3.0"]
+# and to write HDF5 output, so it is needed for any TNG workflow. `six` is used
+# by MARTINI's IllustrisTNG I/O helpers (martini.sources._illustris_tools).
+hdf5 = ["h5py>=3.0", "six>=1.10"]
 parallel = ["multiprocess>=0.70"]
 plotting = ["matplotlib>=3.4"]
 testing = [
@@ -61,11 +72,13 @@ testing = [
 ]
 all = [
     "h5py>=3.0",
+    "six>=1.10",
     "multiprocess>=0.70",
     "matplotlib>=3.4",
 ]
 dev = [
     "h5py>=3.0",
+    "six>=1.10",
     "multiprocess>=0.70",
     "matplotlib>=3.4",
     "pytest>=7.0",
@@ -106,9 +119,9 @@ target-version = "py39"
 extend-exclude = ["docs", "examples"]
 
 [tool.ruff.lint]
-# Deliberately narrow: the observation machinery is vendored from MARTINI and is
-# not restyled here, so only genuine errors (pyflakes + syntax/import errors) are
-# enforced repo-wide.
+# Deliberately narrow: astrovodka subclasses MARTINI and adds a cosmology layer
+# on top, so only genuine errors (pyflakes + syntax/import errors) are enforced
+# repo-wide.
 select = ["E4", "E7", "E9", "F"]
 
 [tool.mypy]

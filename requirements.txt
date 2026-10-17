@@ -10,11 +10,19 @@
 #
 #     pip install -e ".[hdf5,parallel,plotting]"
 
+# MARTINI: the observation machinery astrovodka calls (data cubes, beams,
+# spectral models, SPH kernels, noise, Martini, SPHSource).
+astromartini>=2.1.9
+
 numpy>=1.20
 scipy>=1.6
 astropy>=5.0
 tqdm>=4.40
 
-# datacube.py uses typing.Self (PEP 673), which reaches the standard library
-# only in Python 3.11.
+# MARTINI's datacube uses typing.Self with a typing_extensions fallback on
+# Python < 3.11, but upstream does not declare the dependency.
 typing_extensions>=4.0; python_version < "3.11"
+
+# MARTINI 2.1.16+ imports requests.models at module level when
+# martini.sources is imported (upstream lists it only in its tngsource extra).
+requests>=2.20

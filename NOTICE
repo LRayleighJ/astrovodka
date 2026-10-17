@@ -1,34 +1,47 @@
 astrovodka — copyright, provenance and licence notice
 =====================================================
 
-astrovodka is a derivative work of MARTINI. It is distributed under the GNU
-General Public License, version 3 or later; the full licence text is in the
-file LICENSE in this directory.
+astrovodka is built on MARTINI and is distributed under the GNU General Public
+License, version 3 or later; the full licence text is in the file LICENSE in
+this directory.
 
 
-1. Upstream work
-----------------
+1. Upstream work and dependency
+-------------------------------
 
     MARTINI: Mock Array Radio Telescope Interferometry of the Neutral ISM
     Copyright (C) Kyle A. Oman and contributors
     https://github.com/kyleaoman/martini
     Licensed under the GNU General Public License v3.
 
-The observation machinery in this package — the core pipeline (astrovodka/martini.py),
-the data cube (astrovodka/datacube.py), beams, noise, spectral line models, SPH
-smoothing kernels, angular-momentum coordinates (astrovodka/L_coords.py) and the
-Illustris data I/O helpers (astrovodka/sources/_illustris_tools.py,
-astrovodka/sources/_L_align.py, astrovodka/sources/_extra_cartesian_transforms.py)
-— is derived from MARTINI and has been modified. It is vendored into this package
-rather than imported, so astrovodka has no runtime dependency on the `astromartini`
-distribution.
+astrovodka does not contain a copy of MARTINI. The observation machinery — the
+core pipeline (Martini, GlobalProfile), the data cube, beams, noise, spectral
+line models, SPH smoothing kernels, angular-momentum coordinates and the
+IllustrisTNG data I/O helpers — is imported at runtime from the `astromartini`
+distribution, which is a required dependency (see `dependencies` in
+pyproject.toml).
 
-In accordance with section 5(a) of the GNU GPL v3, notice is given that these
-files have been changed. The changes comprise, among others: renaming the
-top-level package from `martini` to `astrovodka`; replacing the linear Hubble law
-distance handling with astropy cosmological distances; changing the systemic
-velocity convention to the radio convention c*z/(1+z); and adding a redshift mode
-to SPHSource. See CHANGELOG.md for the full history of modifications.
+astrovodka subclasses MARTINI where its behaviour differs and re-exports the
+rest unchanged:
+
+  - astrovodka/datacube.py        DataCube, adding `spectral_unit`
+  - astrovodka/martini.py         Martini and GlobalProfile, preserving the
+                                  full cube setup across `reset`
+  - astrovodka/sources/sph_source.py
+                                  SPHSource, adding the redshift distance mode
+  - astrovodka/spectral_models.py GaussianSpectrum and DiracDeltaSpectrum,
+                                  applying the D_L rather than D_A flux scale
+  - astrovodka/beams.py, noise.py, sph_kernels.py, L_coords.py,
+    sources/_illustris_tools.py   re-exports of MARTINI's implementations
+
+Because astrovodka is built on MARTINI, it remains a derivative work of MARTINI
+and is distributed under the same licence. In accordance with section 5(a) of
+the GNU GPL v3, notice is given that the astrovodka-specific layer differs from
+MARTINI as follows: cosmological (Planck15) distances replace the linear Hubble
+law; the systemic velocity uses the radio convention c*z/(1+z); SPHSource gains
+the redshift mode; DataCube gains an explicit spectral-axis unit; and the
+spectral models apply the luminosity-distance flux scale. See CHANGELOG.md for
+the full history.
 
 
 2. This work
@@ -44,8 +57,10 @@ The following are original to astrovodka and are not derived from MARTINI:
   - astrovodka/cosmology_utils.py cosmological distance, velocity and TNG unit
                                   conversions
   - astrovodka/data_products.py   SubhaloDataProducts (3D gridded products)
+  - astrovodka/group_products.py  GroupDataProducts (FOF-group products)
   - astrovodka/sources/tng_source.py
                                   the TNGSource class and its local-disk TNG I/O
+  - the subclass layer listed in section 1
 
 
 3. Third-party data and results

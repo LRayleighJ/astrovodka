@@ -111,8 +111,7 @@ def test_api_reference_is_complete_in_both_languages():
 
     Modules whose names begin with an underscore are internals, and whether to
     document them is the documentation's choice — ``_illustris_tools`` has a
-    page because users reach for it, ``_L_align`` and
-    ``_extra_cartesian_transforms`` do not. What must not happen is a *public*
+    page because users reach for it. What must not happen is a *public*
     module going undocumented, or a page existing in one language only.
     """
     # Pages are per-module, plus one for the `himodel` subpackage, which is a

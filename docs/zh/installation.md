@@ -37,17 +37,20 @@ conda activate astrovodka
 |---|---|---|
 | Python | 3.9 | 见 [Python 版本支持](#python-版本支持) |
 | pip | 21.3 | 只有 `pyproject.toml` 的项目需要它 |
+| **astromartini** | 2.1.9 | **必需** — astrovodka 导入并继承的观测引擎 |
 | numpy | 1.20 | 核心依赖 |
 | scipy | 1.6 | FFT 卷积、插值、特殊函数 |
 | astropy | 5.0 | 宇宙学、单位、坐标、WCS、FITS 读写 |
 | tqdm | 4.40 | 进度条 |
+| requests | 2.20 | 自动安装：MARTINI 2.1.16+ 在加载 `martini.sources` 时需要它 |
 | h5py | 3.0 | *可选，但处理 TNG 数据时必需* — 见下文 |
+| six | 1.10 | 可选：MARTINI 的 TNG I/O 辅助函数使用 |
 | matplotlib | 3.4 | 可选：绘图与教程 |
 | multiprocess | 0.70 | 可选：`ncpu > 1` 时的源插入 |
 
-`numpy`、`scipy`、`astropy` 和 `tqdm` 会随本包自动安装。其余都是按需选择
-的可选依赖组（extra），只不过**任何 TNG 工作流都需要 `h5py`** — 它负责读
-取快照文件，而不只是写出 HDF5 结果。
+`astromartini`、`numpy`、`scipy`、`astropy` 和 `tqdm` 会随本包自动安装。其余
+都是按需选择的可选依赖组（extra），只不过**任何 TNG 工作流都需要 `h5py`** —
+它负责读取快照文件，而不只是写出 HDF5 结果。
 
 注意 astrovodka 使用的是 **`multiprocess`**，而不是标准库的
 `multiprocessing`。MARTINI 用基于 `dill` 的序列化来做并行，标准库模块并
@@ -151,9 +154,9 @@ result = compute_hi_mass(gas, model="K13_vol", cfg=cfg)
 print(result.m_hi_msun, result.m_h2_msun)
 ```
 
-包的布局正是为了让这一点成立：`astrovodka.himodel` 不从观测层导入任何东
-西，`import astrovodka` 也不会导入 h5py 或 matplotlib。有一项测试同时保
-证这两点（`tests/test_selfcontained.py`）。
+包的布局正是为了让这一点成立：`astrovodka.himodel` 不从观测层（包括 MARTINI）
+导入任何东西，`import astrovodka` 也不会导入 h5py 或 matplotlib。有一项测试同时保
+证这两点（`tests/test_upstream_dependency.py`）。
 
 ---
 
@@ -161,7 +164,7 @@ print(result.m_hi_msun, result.m_h2_msun)
 
 | 可选依赖组 | 包 | 解锁的功能 | 适用场景 |
 |---|---|---|---|
-| `hdf5` | h5py | 读取 TNG 快照与群目录；`write_hdf5`、`save_state`、`SubhaloDataProducts.save_hdf5` | **任何 TNG 工作流** |
+| `hdf5` | h5py、six | 读取 TNG 快照与群目录；`write_hdf5`、`save_state`、`SubhaloDataProducts.save_hdf5` | **任何 TNG 工作流** |
 | `parallel` | multiprocess | `insert_source_in_cube(ncpu=N)`、多核光谱初始化 | 大型立方体 |
 | `plotting` | matplotlib | `Martini.preview()`、`GlobalProfile.plot_spectrum()`、教程插图 | 出图 |
 | `testing` | pytest, pytest-cov | 测试套件 | 开发 |
@@ -334,11 +337,12 @@ python examples/en/astrovodka_demo.py --snapNum 99 --subID 113 --hiModel K13_vol
 |---|---|---|
 | `ModuleNotFoundError: No module named 'astrovodka'` | 没有安装，或装进了另一个解释器 | 用与运行脚本*同一个* `python` 执行 `python -m pip install -e .` |
 | 构造 `TNGSource` 时出现 `ModuleNotFoundError: No module named 'h5py'` | h5py 属于可选依赖组 | `pip install -e ".[hdf5]"` |
-| `ModuleNotFoundError: No module named 'six'` | 较早版本的随附 TNG I/O 使用了 `six` | 已在 1.0.0 中更新；请更新你的检出 |
-| 在 Python 3.9/3.10 上出现 `ModuleNotFoundError: No module named 'typing_extensions'` | `typing.Self` 到 3.11 才进入标准库 | `pip install typing_extensions`，或重新安装本包，让条件依赖被解析出来 |
+| 构造 `TNGSource` 时出现 `ModuleNotFoundError: No module named 'six'` | MARTINI 的 IllustrisTNG I/O 辅助函数使用 `six` | `pip install -e ".[hdf5]"`（`hdf5` 依赖组已包含它） |
+| `ModuleNotFoundError: No module named 'martini'` | `astromartini` 是必需依赖，但被跳过了（例如 `pip install --no-deps`） | `pip install "astromartini>=2.1.9"` |
 | 使用 `ncpu > 1` 时出现 `ModuleNotFoundError: No module named 'multiprocess'` | 标准库的 `multiprocessing` 不能替代它 | `pip install -e ".[parallel]"` |
 | `ImportError: numpy.core.multiarray failed to import` | numpy/scipy 是针对不匹配的 ABI 构建的 | 在全新环境里执行 `pip install --force-reinstall numpy scipy` |
 | `ValueError: datacube padding insufficient for beam convolution` | `write_fits` 会调用 `drop_pad()`，因此在流水线中途写出会移除填充区 | 在下一次 `convolve_beam()` 之前执行 `M.datacube.add_pad(M.beam.needs_pad())` |
+| `Martini.preview()` 中出现 `ValueError: s must be a scalar, or float array-like` | MARTINI 2.1.9–2.1.15 的上游 bug，2.1.17–2.1.18 已修复 | `M.preview(point_scaling="fixed")`，或从 GitHub 安装 MARTINI 2.1.17+ |
 | `FileNotFoundError: .../snapdir_099/...` | `basePath` 指向了 `snapdir_099/` 本身，或指向 `TNG-100/` 的上一级 | `basePath` 必须是*包含* `groups_<snap>` 和 `snapdir_<snap>` 的那个目录 |
 | 加载一个子晕要花几分钟、几百 GB | 你正在加载星系团核心 | 使用 100 及以上的子晕 ID；见 [硬件](#硬件) |
 | `RuntimeError: unknown hi_model` | 拼写错误，或用了旧版本中的名称 | 取 `K13_vol`、`K13_map`、`GD14_vol`、`GD14_map` 之一 |
@@ -352,14 +356,15 @@ python examples/en/astrovodka_demo.py --snapNum 99 --subID 113 --hiModel K13_vol
 
 有两个细节值得了解：
 
-- `astrovodka/datacube.py` 使用了 `typing.Self`，它到 Python 3.11 才进入
-  标准库。在 3.9 和 3.10 上它会回退到 `typing_extensions`，后者被声明为
-  条件依赖，因此在这些版本上会自动安装。
-- `types.EllipsisType`（3.10+）采用防御式导入，并带有 `type(Ellipsis)`
-  回退，因此该标注在 3.9 上也能正常工作。
+- 版本下限来自 **`astromartini`**：2.1.9 到 2.1.15 支持 Python 3.9，2.1.16
+  及以后要求 3.10。pip 会为当前解释器解析可用的最新 MARTINI，而 astrovodka
+  兼容所有已发布版本 — 它的旋转适配层会在导入时识别 2.1.16 的 API 变化。
+- **Python 3.9 和 3.10 上需要 `typing_extensions`**：MARTINI 的 `datacube`
+  使用 `typing.Self` 并以 `typing_extensions` 作为回退，但上游没有声明该依赖，
+  因此由 astrovodka 在这些版本上声明。
 
 由于 astropy 7 要求 Python 3.11 及更高版本，在 Python 3.9 上 pip 会解析
 到较旧的 astropy（6.x），而它是受支持的。astropy 声明的最低版本是 5.0。
 
-随仓库附带的 MARTINI 观测机制在这里没有改写，但它是干净的 3.9 代码，CI
-会在每个受支持的版本上运行整套测试。
+MARTINI 的观测机制在这里没有改写，但它是干净的 3.9 代码，CI 会在每个受支持
+的版本上运行整套测试。

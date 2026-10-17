@@ -2,6 +2,8 @@
 
 Generate noise cubes. Built-in: `GaussianNoise`.
 
+The implementation is MARTINI's: it is imported from `martini.noise` and re-exported here.
+
 ## GaussianNoise
 
 ### `__init__(self, rms=1 Jy/beam, seed=0)`

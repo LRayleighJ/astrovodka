@@ -343,8 +343,8 @@ M.datacube.add_pad(M.beam.needs_pad())
 
 ## 与 MARTINI 的差异
 
-观测流水线是 MARTINI 的，是摘取融合并内嵌在仓库里的，而不是通过导入依赖的
-获得。不同之处：
+观测流水线是 MARTINI 的：astrovodka 导入 `astromartini` 包，只在下表所列行为不同的
+地方继承并覆盖，其余原样转发。不同之处：
 
 | | MARTINI | astrovodka |
 |---|---|---|
@@ -366,8 +366,8 @@ M.datacube.add_pad(M.beam.needs_pad())
 
 ### 未实现的部分
 
-- **只有 TNG 源。** 上游的 EAGLE、Simba、FIRE、Magneticum、Colibre、SWIFT
-  和 `CombinedSource` 类都不存在 —— 把项目无法测试的源收进仓库，
-  就意味着发布没人能在这里检查的代码。
+- **只转发 TNG 源。** 上游的 EAGLE、Simba、FIRE、Magneticum、Colibre、SWIFT
+  和 `CombinedSource` 类仍可从 `martini.sources` 使用，但 `astrovodka.sources`
+  刻意不封装项目无法测试的源。
 - **一个数据立方体中的多星系观测**，也就是 `CombinedSource` 的用途。
 - **大子晕的内存分块** —— 三维网格是整体构建的。

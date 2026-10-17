@@ -2,6 +2,8 @@
 
 Models the telescope beam. Built-in: `GaussianBeam` (elliptical 2D Gaussian).
 
+The implementation is MARTINI's: it is imported from `martini.beams` and re-exported here.
+
 ## GaussianBeam
 
 ### `__init__(self, bmaj=15 arcsec, bmin=None, bpa=0 deg, truncate=4.0)`

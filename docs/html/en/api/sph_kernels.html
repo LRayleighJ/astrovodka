@@ -51,6 +51,7 @@ text-decoration:none;background:var(--code-bg)}
 <nav class="lang"><a href="../../index.html">astrovodka documentation</a><a href="../../zh/index.html">简体中文</a></nav>
 <h1 id="astrovodkasph_kernels--sph-smoothing-kernels">astrovodka.sph_kernels — SPH Smoothing Kernels</h1>
 <p>Smooth SPH particles onto the pixel grid. All public kernels include <strong>adaptive fallback</strong>: when the pixel-to-smoothing-length ratio is too large, they automatically fall back to <code>DiracDeltaKernel</code> then <code>GaussianKernel(truncate=6)</code>.</p>
+<p>The implementation is MARTINI's: it is imported from <code>martini.sph_kernels</code> and re-exported here.</p>
 <h2 id="public-kernel-classes">Public Kernel Classes</h2>
 <table>
 <thead>

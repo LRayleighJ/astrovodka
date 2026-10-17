@@ -2,6 +2,8 @@
 
 Abstracts an HI-emitting object from SPH particle arrays. Supports legacy distance mode and new cosmological redshift mode.
 
+This class subclasses `martini.sources.SPHSource`. The particle machinery is MARTINI's; only the redshift distance mode is astrovodka's.
+
 ## SPHSource
 
 ### `__init__(self, *, distance=None, redshift=None, cosmology=None, vpeculiar=0 km/s, rotation=None, L_coords=None, ra=0 deg, dec=0 deg, h=0.7, T_g=None, mHI_g=None, xyz_g=None, vxyz_g=None, hsm_g=None, coordinate_axis=None, coordinate_frame=ICRS())`

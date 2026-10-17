@@ -2,6 +2,8 @@
 
 生成噪声数据立方体。内置：`GaussianNoise`。
 
+实现来自 MARTINI：从 `martini.noise` 导入并在此转发。
+
 ## GaussianNoise
 
 ### `__init__(self, rms=1 Jy/beam, seed=0)`

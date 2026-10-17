@@ -54,7 +54,7 @@ from .himodel import (
 )
 from .himodel.physics import calc_temperature, rho_code_to_nH
 from .himodel.uvfield import compute_galaxy_fft_uv
-from .sources._illustris_tools import (
+from martini.sources._illustris_tools import (
     gcPath,
     getSnapOffsets,
     loadHeader,
@@ -831,7 +831,7 @@ def _dm_particle_mass(basePath, snapNum, h):
     """Dark-matter particle mass [Msun] from the snapshot's mass table."""
     import h5py
 
-    from .sources._illustris_tools import snapPath
+    from martini.sources._illustris_tools import snapPath
 
     with h5py.File(snapPath(basePath, snapNum), "r") as f:
         mass_table = f["Header"].attrs.get("MassTable", [0.0] * 6)

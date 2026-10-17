@@ -9,8 +9,10 @@
 -r requirements.txt
 
 # TNG snapshot access and HDF5 output. Required for TNGSource: h5py is needed
-# to *read* the snapshot, not only to write products.
+# to *read* the snapshot, not only to write products. `six` is used by
+# MARTINI's IllustrisTNG I/O helpers.
 h5py>=3.0                     # 3.12.1
+six>=1.10                     # 1.17.0
 
 # Multi-core source insertion (ncpu > 1). Note: `multiprocess`, not the stdlib
 # `multiprocessing` — MARTINI uses it for dill-based serialisation.

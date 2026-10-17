@@ -1,6 +1,6 @@
 # astrovodka API reference
 
-Version 1.0.0 — mock resolved HI observations of IllustrisTNG galaxies, with
+Version 1.1.0 — mock resolved HI observations of IllustrisTNG galaxies, with
 cosmological distances and four selectable Diemer+2018 HI/H2 models.
 
 This is the per-module reference. For the concepts behind it, start with the

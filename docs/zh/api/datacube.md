@@ -2,6 +2,8 @@
 
 定义输出数据立方体的网格：像素、通道与 WCS。
 
+本类继承 `martini.datacube.DataCube`。除 `spectral_unit` 外的一切都来自 MARTINI。
+
 ## 模块常量
 
 - **`HIfreq`** = `1.420405751e9 * U.Hz` — HI 21-cm 静止频率。

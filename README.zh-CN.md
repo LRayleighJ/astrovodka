@@ -2,10 +2,15 @@
 
 **面向 IllustrisTNG 的 HI（21 cm）模拟观测数据立方体。**
 
-astrovodka 把 SPH 粒子数据变成合成的射电数据立方体。相比
-[MARTINI](https://github.com/kyleaoman/martini)，它有两处关键改动：距离改用
-`astropy.cosmology` 的宇宙学计算，而不是线性哈勃定律；中性气体质量改用有物理依据的
-HI/H₂ 模型，而不是基于气压的分区。
+> **astrovodka 基于 [MARTINI](https://github.com/kyleaoman/martini)
+> （PyPI 上的 `astromartini`）改动而来，不重复实现它的观测流程。**
+> 数据立方体、波束、谱模型、SPH 核、噪声、`Martini` 驱动和 `SPHSource` 全部来自
+> `astromartini` 包 —— 它是本项目的必需依赖，astrovodka 只导入并继承它，不复制
+> 其代码。使用 astrovodka 时请同时引用 MARTINI。
+
+astrovodka 把 SPH 粒子数据变成合成的射电数据立方体，在 MARTINI 之上加入两处
+关键改动：距离改用 `astropy.cosmology` 的宇宙学计算，而不是线性哈勃定律；
+中性气体质量改用有物理依据的 HI/H₂ 模型，而不是基于气压的分区。
 
 [English](README.md) · **简体中文**
 
@@ -56,6 +61,7 @@ python -m pip install -e ".[dev]"
 | 依赖 | 版本 |
 |---|---|
 | Python | ≥ 3.9 |
+| **astromartini** | 必需 —— 观测引擎，astrovodka 调用它 |
 | numpy、scipy、astropy、tqdm | 自动安装 |
 | **h5py** | 可选依赖，但**任何 TNG 工作流都必须有** —— 读快照靠它 |
 | matplotlib、multiprocess | 可选：出图、多核并行 |
@@ -182,8 +188,10 @@ result.m_hi_msun, result.m_h2_msun
 
 ## 与 MARTINI 的差别
 
-astrovodka 是一个 fork：观测流程的代码来自 MARTINI，是摘取融合进来的，不是依赖调用。
-不同的地方有：
+astrovodka 并不是 fork，而是构建在 MARTINI 之上：观测流程（数据立方体、波束、谱模型、
+SPH 核、噪声、`Martini` 驱动和 `SPHSource`）就是 `astromartini` 包本身。astrovodka
+导入它，只在下表所列行为不同的地方继承并覆盖，其余原样转发；包内没有任何 MARTINI
+代码的副本。不同的地方有：
 
 | | MARTINI | astrovodka |
 |---|---|---|
@@ -199,9 +207,11 @@ astrovodka 是一个 fork：观测流程的代码来自 MARTINI，是摘取融�
 | **三维产品** | — | `SubhaloDataProducts`：UV、DM、HI、H₂，实空间与红移空间 |
 | **已实现的源** | EAGLE、Simba、FIRE、Magneticum、Colibre、SWIFT…… | 仅 TNG |
 
-两部分是**单向**的：`astrovodka.himodel` 是纯物理，不导入任何观测层的代码，因此质量
-模型可以单独使用、单独测试，完全不需要数据立方体。`tests/test_selfcontained.py`
-用 AST 解析强制这一点，同时也禁止包里出现任何绝对形式的 `import martini`。
+依赖是**单向且显式**的：astrovodka 调用 MARTINI，反过来不成立；
+`astrovodka.himodel` 是纯物理，既不导入观测层，也不导入 MARTINI，因此质量模型可以
+单独使用、单独测试，完全不需要数据立方体。`tests/test_upstream_dependency.py` 强制
+检查：`astromartini` 被声明为依赖且确实被导入；观测类要么就是上游对象、要么是它们的
+子类，而不是重新实现；`himodel` 保持独立。
 
 ---
 

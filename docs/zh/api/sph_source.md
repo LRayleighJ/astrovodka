@@ -2,6 +2,8 @@
 
 从 SPH 粒子数组抽象出发射 HI 的天体。同时支持旧版距离模式和新的宇宙学红移模式。
 
+本类继承 `martini.sources.SPHSource`。粒子机制来自 MARTINI，只有红移距离模式是 astrovodka 的。
+
 ## SPHSource
 
 ### `__init__(self, *, distance=None, redshift=None, cosmology=None, vpeculiar=0 km/s, rotation=None, L_coords=None, ra=0 deg, dec=0 deg, h=0.7, T_g=None, mHI_g=None, xyz_g=None, vxyz_g=None, hsm_g=None, coordinate_axis=None, coordinate_frame=ICRS())`

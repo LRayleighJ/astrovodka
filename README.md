@@ -2,11 +2,18 @@
 
 **Mock resolved HI (21 cm) observations of IllustrisTNG galaxies.**
 
-astrovodka turns SPH particle data into synthetic radio data cubes, with two
-departures from [MARTINI](https://github.com/kyleaoman/martini): cosmological
-distances come from `astropy.cosmology` rather than a linear Hubble law, and
-neutral gas masses come from physically motivated HI/H₂ models rather than a
-pressure-based partition.
+> **astrovodka is built on and modifies
+> [MARTINI](https://github.com/kyleaoman/martini) (`astromartini` on PyPI).**
+> It does not reimplement MARTINI's observation machinery: data cubes, beams,
+> spectral models, SPH kernels, noise, the `Martini` driver and `SPHSource` all
+> come from the `astromartini` package, which is a required dependency and is
+> imported and subclassed rather than copied. If you use astrovodka, please
+> cite MARTINI as well.
+
+astrovodka turns SPH particle data into synthetic radio data cubes, adding two
+things to MARTINI: cosmological distances from `astropy.cosmology` rather than
+a linear Hubble law, and neutral gas masses from physically motivated HI/H₂
+models rather than a pressure-based partition.
 
 **English** · [简体中文](README.zh-CN.md)
 
@@ -58,6 +65,7 @@ python -m pip install -e ".[dev]"
 | Requirement | Version |
 |---|---|
 | Python | ≥ 3.9 |
+| **astromartini** | required — the observation engine astrovodka calls |
 | numpy, scipy, astropy, tqdm | installed automatically |
 | **h5py** | optional extra, **required for any TNG workflow** — it reads the snapshots |
 | matplotlib, multiprocess | optional: figures, and multi-core insertion |
@@ -188,8 +196,11 @@ how the UV field is built, and how to tune the numerical settings.
 
 ## Differences from MARTINI
 
-astrovodka is a fork: the observation machinery is MARTINI's, vendored rather
-than imported. What differs:
+astrovodka builds on MARTINI rather than forking it. The observation machinery
+(data cubes, beams, spectral models, SPH kernels, noise, the `Martini` driver
+and `SPHSource`) is the `astromartini` package: astrovodka imports it, subclasses
+it where the behaviour below differs, and re-exports it unchanged elsewhere. It
+contains no copy of MARTINI's code. What differs:
 
 | | MARTINI | astrovodka |
 |---|---|---|
@@ -205,10 +216,13 @@ than imported. What differs:
 | **3D products** | — | `SubhaloDataProducts`: UV, DM, HI, H₂; real and redshift space |
 | **Sources implemented** | EAGLE, Simba, FIRE, Magneticum, Colibre, SWIFT, … | TNG only |
 
-The two are also **one-way**: `astrovodka.himodel` is pure physics and imports
-nothing from the observation layer, so the mass models can be used and tested
-with no data cube anywhere in sight. `tests/test_selfcontained.py` enforces
-this, and that no absolute `import martini` exists anywhere in the package.
+The dependency is **one-way and explicit**: astrovodka calls MARTINI, never the
+reverse, and `astrovodka.himodel` is pure physics that imports neither the
+observation layer nor MARTINI, so the mass models can be used and tested with no
+data cube anywhere in sight. `tests/test_upstream_dependency.py` enforces that
+`astromartini` is declared and imported, that the observation classes are
+upstream objects or subclasses of them rather than reimplementations, and that
+`himodel` stays independent.
 
 ---
 

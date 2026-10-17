@@ -2,6 +2,8 @@
 
 A `NamedTuple` specifying source orientation based on angular momentum.
 
+MARTINI 2.1.16 and later ship the same type as `martini.L_coords`; on 2.1.9–2.1.15 astrovodka defines it locally.
+
 ## `L_coords(incl=0 deg, pa=270 deg, az_rot=0 deg)`
 
 | Field | Type | Default | Description |

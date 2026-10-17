@@ -96,6 +96,11 @@ conda activate astrovodka</code></pre>
 <td>只有 <code>pyproject.toml</code> 的项目需要它</td>
 </tr>
 <tr>
+<td><strong>astromartini</strong></td>
+<td>2.1.9</td>
+<td><strong>必需</strong> — astrovodka 导入并继承的观测引擎</td>
+</tr>
+<tr>
 <td>numpy</td>
 <td>1.20</td>
 <td>核心依赖</td>
@@ -116,9 +121,19 @@ conda activate astrovodka</code></pre>
 <td>进度条</td>
 </tr>
 <tr>
+<td>requests</td>
+<td>2.20</td>
+<td>自动安装：MARTINI 2.1.16+ 在加载 <code>martini.sources</code> 时需要它</td>
+</tr>
+<tr>
 <td>h5py</td>
 <td>3.0</td>
 <td><em>可选，但处理 TNG 数据时必需</em> — 见下文</td>
+</tr>
+<tr>
+<td>six</td>
+<td>1.10</td>
+<td>可选：MARTINI 的 TNG I/O 辅助函数使用</td>
 </tr>
 <tr>
 <td>matplotlib</td>
@@ -132,7 +147,7 @@ conda activate astrovodka</code></pre>
 </tr>
 </tbody>
 </table>
-<p><code>numpy</code>、<code>scipy</code>、<code>astropy</code> 和 <code>tqdm</code> 会随本包自动安装。其余都是按需选择 的可选依赖组（extra），只不过<strong>任何 TNG 工作流都需要 <code>h5py</code></strong> — 它负责读 取快照文件，而不只是写出 HDF5 结果。</p>
+<p><code>astromartini</code>、<code>numpy</code>、<code>scipy</code>、<code>astropy</code> 和 <code>tqdm</code> 会随本包自动安装。其余 都是按需选择的可选依赖组（extra），只不过<strong>任何 TNG 工作流都需要 <code>h5py</code></strong> — 它负责读取快照文件，而不只是写出 HDF5 结果。</p>
 <p>注意 astrovodka 使用的是 <strong><code>multiprocess</code></strong>，而不是标准库的 <code>multiprocessing</code>。MARTINI 用基于 <code>dill</code> 的序列化来做并行，标准库模块并 不提供这一能力。只有当你传入 <code>ncpu &gt; 1</code> 时才需要安装 <code>multiprocess</code>。</p>
 <h3 id="硬件">硬件</h3>
 <p>本包本身很轻量，但有两个功能很吃内存：</p>
@@ -177,7 +192,7 @@ python -m pip install -e . --no-deps</code></pre>
 cfg = HIModelConfig(h=0.6774, z=0.0, boxsize_ckpc_per_h=75000.0, ngrid=64)
 result = compute_hi_mass(gas, model=&quot;K13_vol&quot;, cfg=cfg)
 print(result.m_hi_msun, result.m_h2_msun)</code></pre>
-<p>包的布局正是为了让这一点成立：<code>astrovodka.himodel</code> 不从观测层导入任何东 西，<code>import astrovodka</code> 也不会导入 h5py 或 matplotlib。有一项测试同时保 证这两点（<code>tests/test_selfcontained.py</code>）。</p>
+<p>包的布局正是为了让这一点成立：<code>astrovodka.himodel</code> 不从观测层（包括 MARTINI） 导入任何东西，<code>import astrovodka</code> 也不会导入 h5py 或 matplotlib。有一项测试同时保 证这两点（<code>tests/test_upstream_dependency.py</code>）。</p>
 <hr>
 <h2 id="可选依赖">可选依赖</h2>
 <table>
@@ -192,7 +207,7 @@ print(result.m_hi_msun, result.m_h2_msun)</code></pre>
 <tbody>
 <tr>
 <td><code>hdf5</code></td>
-<td>h5py</td>
+<td>h5py、six</td>
 <td>读取 TNG 快照与群目录；<code>write_hdf5</code>、<code>save_state</code>、<code>SubhaloDataProducts.save_hdf5</code></td>
 <td><strong>任何 TNG 工作流</strong></td>
 </tr>
@@ -314,14 +329,14 @@ python examples/en/astrovodka_demo.py --snapNum 99 --subID 113 --hiModel K13_vol
 <td><code>pip install -e ".[hdf5]"</code></td>
 </tr>
 <tr>
-<td><code>ModuleNotFoundError: No module named 'six'</code></td>
-<td>较早版本的随附 TNG I/O 使用了 <code>six</code></td>
-<td>已在 1.0.0 中更新；请更新你的检出</td>
+<td>构造 <code>TNGSource</code> 时出现 <code>ModuleNotFoundError: No module named 'six'</code></td>
+<td>MARTINI 的 IllustrisTNG I/O 辅助函数使用 <code>six</code></td>
+<td><code>pip install -e ".[hdf5]"</code>（<code>hdf5</code> 依赖组已包含它）</td>
 </tr>
 <tr>
-<td>在 Python 3.9/3.10 上出现 <code>ModuleNotFoundError: No module named 'typing_extensions'</code></td>
-<td><code>typing.Self</code> 到 3.11 才进入标准库</td>
-<td><code>pip install typing_extensions</code>，或重新安装本包，让条件依赖被解析出来</td>
+<td><code>ModuleNotFoundError: No module named 'martini'</code></td>
+<td><code>astromartini</code> 是必需依赖，但被跳过了（例如 <code>pip install --no-deps</code>）</td>
+<td><code>pip install "astromartini&gt;=2.1.9"</code></td>
 </tr>
 <tr>
 <td>使用 <code>ncpu &gt; 1</code> 时出现 <code>ModuleNotFoundError: No module named 'multiprocess'</code></td>
@@ -337,6 +352,11 @@ python examples/en/astrovodka_demo.py --snapNum 99 --subID 113 --hiModel K13_vol
 <td><code>ValueError: datacube padding insufficient for beam convolution</code></td>
 <td><code>write_fits</code> 会调用 <code>drop_pad()</code>，因此在流水线中途写出会移除填充区</td>
 <td>在下一次 <code>convolve_beam()</code> 之前执行 <code>M.datacube.add_pad(M.beam.needs_pad())</code></td>
+</tr>
+<tr>
+<td><code>Martini.preview()</code> 中出现 <code>ValueError: s must be a scalar, or float array-like</code></td>
+<td>MARTINI 2.1.9–2.1.15 的上游 bug，2.1.17–2.1.18 已修复</td>
+<td><code>M.preview(point_scaling="fixed")</code>，或从 GitHub 安装 MARTINI 2.1.17+</td>
 </tr>
 <tr>
 <td><code>FileNotFoundError: .../snapdir_099/...</code></td>
@@ -360,11 +380,11 @@ python examples/en/astrovodka_demo.py --snapNum 99 --subID 113 --hiModel K13_vol
 <p><strong>Python 3.9 是最低版本，也是本次发布所测试的版本</strong>，CI 中连同 3.10 到 3.13 一起覆盖。<code>pyproject.toml</code> 声明了 <code>requires-python = "&gt;=3.9"</code>。</p>
 <p>有两个细节值得了解：</p>
 <ul>
-<li><code>astrovodka/datacube.py</code> 使用了 <code>typing.Self</code>，它到 Python 3.11 才进入 标准库。在 3.9 和 3.10 上它会回退到 <code>typing_extensions</code>，后者被声明为 条件依赖，因此在这些版本上会自动安装。</li>
-<li><code>types.EllipsisType</code>（3.10+）采用防御式导入，并带有 <code>type(Ellipsis)</code> 回退，因此该标注在 3.9 上也能正常工作。</li>
+<li>版本下限来自 <strong><code>astromartini</code></strong>：2.1.9 到 2.1.15 支持 Python 3.9，2.1.16 及以后要求 3.10。pip 会为当前解释器解析可用的最新 MARTINI，而 astrovodka 兼容所有已发布版本 — 它的旋转适配层会在导入时识别 2.1.16 的 API 变化。</li>
+<li><strong>Python 3.9 和 3.10 上需要 <code>typing_extensions</code></strong>：MARTINI 的 <code>datacube</code> 使用 <code>typing.Self</code> 并以 <code>typing_extensions</code> 作为回退，但上游没有声明该依赖， 因此由 astrovodka 在这些版本上声明。</li>
 </ul>
 <p>由于 astropy 7 要求 Python 3.11 及更高版本，在 Python 3.9 上 pip 会解析 到较旧的 astropy（6.x），而它是受支持的。astropy 声明的最低版本是 5.0。</p>
-<p>随仓库附带的 MARTINI 观测机制在这里没有改写，但它是干净的 3.9 代码，CI 会在每个受支持的版本上运行整套测试。</p>
+<p>MARTINI 的观测机制在这里没有改写，但它是干净的 3.9 代码，CI 会在每个受支持 的版本上运行整套测试。</p>
 <footer>astrovodka &mdash; mock resolved HI observations of IllustrisTNG galaxies.
 Generated from the Markdown sources by <code>docs/build_html.py</code>.</footer>
 </div>

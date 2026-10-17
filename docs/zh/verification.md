@@ -42,7 +42,7 @@
 ## 测试套件
 
 ```bash
-python -m pytest tests/ -q      # 125 个测试，约 14 s
+python -m pytest tests/ -q      # 162 个测试，约 30 s
 ```
 
 它**不需要 TNG 数据，不需要网络，也不需要任何可选依赖**。
@@ -51,10 +51,11 @@ python -m pytest tests/ -q      # 125 个测试，约 14 s
 |---|---|---|
 | `test_hi_models.py` | 52 | 四种方法之间的关键字选择、配置解析、各模型的不变量（比例范围、质量守恒、输出长度完整）、四种方法确实彼此不同、`uv_mode` 的处理、偏心 FFT UV 回归测试，以及底层物理 |
 | `test_pipeline.py` | 13 | 宇宙学模式、光谱轴与速度的一致性、角尺度等于 `r/D_A`、z = 0.02–1.0 的质量回收 |
-| `test_selfcontained.py` | 19 | 任何地方都没有 `import martini`（由 AST 检查）、导入 astrovodka 之后 `sys.modules` 中没有 `martini.*`、每个内嵌模块和自有模块都可导入、`himodel` 从不导入观测层 |
+| `test_upstream_dependency.py` | 19 | `astromartini` 被声明为依赖且确实被导入；每个转发的类要么就是上游对象、要么是它的子类，绝不是重新实现；仓库中不再有内嵌的 MARTINI 模块；`himodel` 既不导入 MARTINI 也不导入观测层 |
 | `test_cosmology.py` | 14 | 距离、H(z)、两种速度约定、观测频率 |
 | `test_docs_sync.py` | 11 | 生成的 HTML 与 Markdown 一致；中英文两棵树保持平行；相对链接都能解析 |
-| `test_data_products.py` | 16 | `spectral_unit` 的处理，包括宽度换算回归测试、UV 网格的暴露、HDF5 往返 |
+| `test_data_products.py` | 21 | `spectral_unit` 的处理，包括宽度换算回归测试、UV 网格的暴露、HDF5 往返 |
+| `test_group_products.py` | 32 | 群尺度产品：成员规则、ISM/CGM/IGM 分类、网格与 HDF5 格式 |
 
 0.2.0 和 0.3.0 中修复的每一个缺陷都有一个回归测试。
 

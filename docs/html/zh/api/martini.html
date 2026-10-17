@@ -51,6 +51,7 @@ text-decoration:none;background:var(--code-bg)}
 <nav class="lang"><a href="../../index.html">astrovodka documentation</a><a href="../../en/index.html">English</a></nav>
 <h1 id="astrovodkamartini--核心流水线">astrovodka.martini — 核心流水线</h1>
 <p><code>Martini</code> 类负责编排模拟观测流水线，把 source、DataCube、beam、noise、spectral model 与 SPH kernel 串联起来。</p>
+<p>这些类继承 <code>martini.martini.Martini</code> 与 <code>martini.martini.GlobalProfile</code>，流水线本身原样继承。</p>
 <h2 id="martini">Martini</h2>
 <h3 id="__init__self--source-datacube-beamnone-noisenone-sph_kernel-spectral_model-quietfalse"><code>__init__(self, *, source, datacube, beam=None, noise=None, sph_kernel, spectral_model, quiet=False)</code></h3>
 <p><strong>参数：</strong></p>

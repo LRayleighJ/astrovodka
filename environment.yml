@@ -34,11 +34,17 @@ dependencies:
   - pytest>=7.0          # 8.4.2
   - pytest-cov>=4.0
 
-  # `multiprocess` (not the stdlib `multiprocessing`) is what MARTINI uses for
-  # multi-core source insertion; it is not on the default conda channels for
-  # every platform, so it is installed through pip below.
+  # MARTINI is the observation engine astrovodka subclasses, and `six` is used
+  # by its IllustrisTNG I/O helpers. `multiprocess` (not the stdlib
+  # `multiprocessing`) is what MARTINI uses for multi-core source insertion;
+  # it is not on the default conda channels for every platform, so it is
+  # installed through pip below.
   - pip
   - pip:
+      - astromartini>=2.1.9  # 2.1.9
+      - requests>=2.20       # imported by MARTINI 2.1.16+ when martini.sources loads
+      - typing_extensions>=4.0  # MARTINI's typing.Self fallback on Python < 3.11
+      - six>=1.10            # 1.17.0
       - multiprocess>=0.70   # 0.70.17
       # Editable install of astrovodka itself.
       - -e .

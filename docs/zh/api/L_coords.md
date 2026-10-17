@@ -2,6 +2,8 @@
 
 一个 `NamedTuple`，用角动量来指定源的取向。
 
+MARTINI 2.1.16 及以后提供同名的 `martini.L_coords`；在 2.1.9–2.1.15 上由 astrovodka 本地定义。
+
 ## `L_coords(incl=0 deg, pa=270 deg, az_rot=0 deg)`
 
 | 字段 | 类型 | 默认值 | 说明 |

@@ -79,11 +79,10 @@ ruff check .
 ruff format --check --diff .
 ```
 
-The ruff configuration is deliberately narrow — `E4`, `E7`, `E9`, `F` — because
-the observation machinery (`astrovodka/martini.py`, `datacube.py`, `beams.py`,
-`noise.py`, `spectral_models.py`, `sph_kernels.py`) is vendored from MARTINI and
-is not restyled here. Restyling it would make future comparisons with upstream
-much harder for no benefit.
+The ruff configuration is deliberately narrow — `E4`, `E7`, `E9`, `F`. Most of
+the observation machinery lives in MARTINI, and astrovodka's own layer consists
+of thin subclasses; enforcing a house style on that layer is not worth diverging
+from upstream conventions.
 
 ## Documentation
 
@@ -163,9 +162,13 @@ contribution is licensed under the same terms.
 
 Two rules follow from this, and both are enforced by tests:
 
-1. **No runtime dependency on `astromartini`.** The observation machinery is
-   vendored, not imported. `tests/test_selfcontained.py` parses the package with
-   `ast` and fails on any absolute `import martini`.
+1. **MARTINI is a required dependency, and its code is not copied here.** The
+   observation machinery is imported from `astromartini` and subclassed where
+   astrovodka's behaviour differs. `tests/test_upstream_dependency.py` checks
+   that `astromartini` is declared and imported, and that every class astrovodka
+   re-exports is either the upstream object itself or a subclass of it. If you
+   need to change MARTINI's behaviour, override it in a subclass; do not paste
+   the upstream implementation into this repository.
 2. **`astrovodka.himodel` must not import the observation layer.** The physics
    has to remain usable with no data cube anywhere in sight.
 

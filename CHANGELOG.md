@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-10-18
+
+### Changed
+
+- **astrovodka now depends on and calls MARTINI instead of containing a copy of
+  it.** Following the MARTINI authors' request, the vendored observation
+  machinery was removed and `astromartini>=2.1.9` became a required dependency.
+  `astrovodka.datacube.DataCube`, `astrovodka.martini.Martini`/`GlobalProfile`,
+  `astrovodka.sources.SPHSource` and the two spectral models are now thin
+  subclasses of their MARTINI counterparts; `beams`, `noise`, `sph_kernels`,
+  `L_coords` and `sources._illustris_tools` re-export MARTINI's classes.
+  Deleting `sources/_L_align.py` and `sources/_extra_cartesian_transforms.py`
+  removes roughly 2,500 lines of upstream code from the repository.
+
+  astrovodka's own behaviour is unchanged: the redshift distance mode (`D_L` for
+  flux, `D_A` for angular scales, radio-convention `vsys`), the `spectral_unit`
+  cube option and the luminosity-distance flux normalisation all remain, and are
+  covered by the existing cosmology and mass-recovery tests. A rotation adapter
+  detects MARTINI's 2.1.16 API change at import time, so every released version
+  from 2.1.9 onward works; Python 3.9 remains the floor.
+
+- `tests/test_selfcontained.py` → `tests/test_upstream_dependency.py`: the
+  invariant it enforces is inverted. It now checks that `astromartini` is
+  declared and imported, that every re-exported class is an upstream object or
+  a subclass of one rather than a reimplementation, and that `himodel` imports
+  neither MARTINI nor the observation layer.
+
+- `typing_extensions` is now declared for Python 3.9/3.10 because MARTINI's
+  `datacube` imports `typing.Self` with a `typing_extensions` fallback without
+  declaring it; `requests` is a core dependency because MARTINI 2.1.16+ imports
+  it when `martini.sources` loads.
+
+- `six` is listed alongside `h5py` in the `hdf5` extra, because MARTINI's
+  IllustrisTNG I/O helpers import it.
+
 ### Fixed
 
 - **`SubhaloDataProducts`' redshift-space grids retained 0.5% of their mass.**
@@ -262,7 +297,8 @@ Initial fork of MARTINI, adding cosmological distances via
 TNG access, `observed_redshift`, 3D data products and DM centre-of-mass
 centring.
 
-[Unreleased]: https://github.com/LRayleighJ/astrovodka/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/LRayleighJ/astrovodka/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/LRayleighJ/astrovodka/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/LRayleighJ/astrovodka/compare/v0.3.0...v1.0.0
 [0.3.0]: https://github.com/LRayleighJ/astrovodka/releases/tag/v0.3.0
 [0.2.0]: https://github.com/LRayleighJ/astrovodka/releases/tag/v0.2.0

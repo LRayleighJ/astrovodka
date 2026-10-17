@@ -2,10 +2,11 @@ cff-version: "1.2.0"
 title: "astrovodka: mock resolved HI observations of IllustrisTNG galaxies"
 message: >-
   astrovodka has no paper of its own yet. If it contributes to your work,
-  please cite the MARTINI papers below — astrovodka is a fork and includes
-  modified MARTINI code — together with the HI/H2 model papers listed in the
-  NOTICE file, which are the physics astrovodka implements.
+  please cite the MARTINI papers below — astrovodka is built on the MARTINI
+  package and subclasses it — together with the HI/H2 model papers listed in
+  the NOTICE file, which are the physics astrovodka implements.
 type: software
+version: "1.1.0"
 license: GPL-3.0-or-later
 repository-code: "https://github.com/LRayleighJ/astrovodka"
 authors:

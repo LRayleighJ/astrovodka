@@ -1,6 +1,6 @@
 # astrovodka API 参考
 
-Version 1.0.0 — 对 IllustrisTNG 星系生成模拟 HI 观测，具备宇宙学距离，
+Version 1.1.0 — 对 IllustrisTNG 星系生成模拟 HI 观测，具备宇宙学距离，
 并提供四种可选的 Diemer+2018 HI/H2 模型。
 
 这里是逐模块的接口参考。背后的概念请先看[用户指南](../guide.md)；

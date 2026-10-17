@@ -38,18 +38,21 @@ and then jump to [Verifying the installation](#verifying-the-installation).
 |---|---|---|
 | Python | 3.9 | See [Python version support](#python-version-support) |
 | pip | 21.3 | Needed for `pyproject.toml`-only projects |
+| **astromartini** | 2.1.9 | **Required** — the observation engine astrovodka imports and subclasses |
 | numpy | 1.20 | Core dependency |
 | scipy | 1.6 | FFT convolution, interpolation, special functions |
 | astropy | 5.0 | Cosmology, units, coordinates, WCS, FITS I/O |
 | tqdm | 4.40 | Progress bars |
+| requests | 2.20 | Auto-installed: MARTINI 2.1.16+ imports it when `martini.sources` loads |
 | h5py | 3.0 | *Optional but required for TNG data* — see below |
+| six | 1.10 | Optional: used by MARTINI's TNG I/O helpers |
 | matplotlib | 3.4 | Optional: figures and tutorials |
 | multiprocess | 0.70 | Optional: `ncpu > 1` source insertion |
 
-`numpy`, `scipy`, `astropy` and `tqdm` are installed automatically with the
-package. The rest are opt-in extras, except that **you need `h5py` for any TNG
-workflow** — it is what reads the snapshot files, not just what writes HDF5
-output.
+`astromartini`, `numpy`, `scipy`, `astropy` and `tqdm` are installed
+automatically with the package. The rest are opt-in extras, except that **you
+need `h5py` for any TNG workflow** — it is what reads the snapshot files, not
+just what writes HDF5 output.
 
 Note that astrovodka uses **`multiprocess`**, not the standard library
 `multiprocessing`. MARTINI parallelises with `dill`-based serialisation, which
@@ -161,8 +164,9 @@ print(result.m_hi_msun, result.m_h2_msun)
 ```
 
 The package is laid out so that this works: `astrovodka.himodel` imports
-nothing from the observation layer, and `import astrovodka` does not import
-h5py or matplotlib. A test enforces both (`tests/test_selfcontained.py`).
+nothing from the observation layer (including MARTINI), and `import astrovodka`
+does not import h5py or matplotlib. A test enforces both
+(`tests/test_upstream_dependency.py`).
 
 ---
 
@@ -170,7 +174,7 @@ h5py or matplotlib. A test enforces both (`tests/test_selfcontained.py`).
 
 | Extra | Package | What it unlocks | Needed for |
 |---|---|---|---|
-| `hdf5` | h5py | Reading TNG snapshot and group catalogs; `write_hdf5`, `save_state`, `SubhaloDataProducts.save_hdf5` | **Any TNG workflow** |
+| `hdf5` | h5py, six | Reading TNG snapshot and group catalogs; `write_hdf5`, `save_state`, `SubhaloDataProducts.save_hdf5` | **Any TNG workflow** |
 | `parallel` | multiprocess | `insert_source_in_cube(ncpu=N)`, multi-core spectrum initialisation | Large cubes |
 | `plotting` | matplotlib | `Martini.preview()`, `GlobalProfile.plot_spectrum()`, the tutorial figures | Figures |
 | `testing` | pytest, pytest-cov | The test suite | Development |
@@ -346,11 +350,12 @@ python examples/en/astrovodka_demo.py --snapNum 99 --subID 113 --hiModel K13_vol
 |---|---|---|
 | `ModuleNotFoundError: No module named 'astrovodka'` | Not installed, or installed into a different interpreter | `python -m pip install -e .` using the *same* `python` you run the script with |
 | `ModuleNotFoundError: No module named 'h5py'` when constructing `TNGSource` | h5py is an optional extra | `pip install -e ".[hdf5]"` |
-| `ModuleNotFoundError: No module named 'six'` | Older revisions of the vendored TNG I/O used `six` | Updated in 1.0.0; update your checkout |
-| `ModuleNotFoundError: No module named 'typing_extensions'` on Python 3.9/3.10 | `typing.Self` is only in the 3.11 stdlib | `pip install typing_extensions`, or reinstall the package so the conditional dependency is resolved |
+| `ModuleNotFoundError: No module named 'six'` when constructing `TNGSource` | MARTINI's IllustrisTNG I/O helpers use `six` | `pip install -e ".[hdf5]"` (the `hdf5` extra includes it) |
+| `ModuleNotFoundError: No module named 'martini'` | `astromartini` is a required dependency but was skipped (e.g. `pip install --no-deps`) | `pip install "astromartini>=2.1.9"` |
 | `ModuleNotFoundError: No module named 'multiprocess'` when using `ncpu > 1` | Stdlib `multiprocessing` is not a substitute | `pip install -e ".[parallel]"` |
 | `ImportError: numpy.core.multiarray failed to import` | numpy/scipy built against mismatched ABIs | `pip install --force-reinstall numpy scipy` in a fresh environment |
 | `ValueError: datacube padding insufficient for beam convolution` | `write_fits` calls `drop_pad()`, so writing mid-pipeline removes the padding | `M.datacube.add_pad(M.beam.needs_pad())` before the next `convolve_beam()` |
+| `ValueError: s must be a scalar, or float array-like` inside `Martini.preview()` | Upstream MARTINI bug in 2.1.9–2.1.15, fixed in 2.1.17–2.1.18 | `M.preview(point_scaling="fixed")`, or install MARTINI 2.1.17+ from GitHub |
 | `FileNotFoundError: .../snapdir_099/...` | `basePath` points at `snapdir_099/` itself, or at the parent of `TNG-100/` | `basePath` must be the directory *containing* `groups_<snap>` and `snapdir_<snap>` |
 | Loading a subhalo takes minutes and hundreds of GB | You are loading a cluster core | Use a subhalo ID in the 100s or higher; see [Hardware](#hardware) |
 | `RuntimeError: unknown hi_model` | A typo, or a name from an older revision | One of `K13_vol`, `K13_map`, `GD14_vol`, `GD14_map` |
@@ -365,16 +370,18 @@ with 3.10 through 3.13 in CI. `pyproject.toml` declares `requires-python =
 
 Two details are worth knowing:
 
-- `astrovodka/datacube.py` uses `typing.Self`, which only reaches the standard
-  library in Python 3.11. On 3.9 and 3.10 that falls back to `typing_extensions`,
-  which is declared as a conditional dependency, so it is installed
-  automatically on those versions.
-- `types.EllipsisType` (3.10+) is imported defensively, with a
-  `type(Ellipsis)` fallback, so the annotation works on 3.9.
+- The floor comes from **`astromartini`**: releases 2.1.9 through 2.1.15 support
+  Python 3.9, while 2.1.16 and later require 3.10. pip resolves the newest
+  MARTINI available for the interpreter, and astrovodka works with every
+  released version — its rotation adapter detects the 2.1.16 API change at
+  import time.
+- **`typing_extensions` is required on Python 3.9 and 3.10**, because MARTINI's
+  `datacube` uses `typing.Self` with a `typing_extensions` fallback but does not
+  declare the dependency itself. astrovodka declares it for those versions.
 
 Because astropy 7 requires Python 3.11 and later, on Python 3.9 pip will
 resolve an older astropy (6.x), which is supported. The declared floor for
 astropy is 5.0.
 
-The vendored MARTINI observation machinery is not restyled here, but it is
-3.9-clean and CI runs the whole suite on every supported version.
+MARTINI's observation machinery is not restyled here, but it is 3.9-clean and
+CI runs the whole suite on every supported version.

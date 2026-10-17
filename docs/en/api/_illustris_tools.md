@@ -1,6 +1,6 @@
 # astrovodka.sources._illustris_tools — TNG Data I/O
 
-Internal utilities for reading IllustrisTNG simulation data. Reproduced from the `illustris_python` toolkit.
+Internal utilities for reading IllustrisTNG simulation data, re-exported from `martini.sources._illustris_tools` (itself derived from the `illustris_python` toolkit).
 
 ### `loadHeader(basePath, snapNum)` → `dict`
 

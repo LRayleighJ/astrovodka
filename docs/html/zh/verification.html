@@ -99,7 +99,7 @@ text-decoration:none;background:var(--code-bg)}
 <p>这条链条是：Diemer+2018 的参考实现 （<code>TNGHI_GD14_model/gd14_model.py</code>）→ <code>TNGHIcalc</code> 包 → <code>astrovodka.himodel</code>。 每个箭头都是通过在相同输入上重新运行两边来检查的。</p>
 <hr>
 <h2 id="测试套件">测试套件</h2>
-<pre><code class="language-bash">python -m pytest tests/ -q      # 125 个测试，约 14 s</code></pre>
+<pre><code class="language-bash">python -m pytest tests/ -q      # 162 个测试，约 30 s</code></pre>
 <p>它<strong>不需要 TNG 数据，不需要网络，也不需要任何可选依赖</strong>。</p>
 <table>
 <thead>
@@ -121,9 +121,9 @@ text-decoration:none;background:var(--code-bg)}
 <td>宇宙学模式、光谱轴与速度的一致性、角尺度等于 <code>r/D_A</code>、z = 0.02–1.0 的质量回收</td>
 </tr>
 <tr>
-<td><code>test_selfcontained.py</code></td>
+<td><code>test_upstream_dependency.py</code></td>
 <td>19</td>
-<td>任何地方都没有 <code>import martini</code>（由 AST 检查）、导入 astrovodka 之后 <code>sys.modules</code> 中没有 <code>martini.*</code>、每个内嵌模块和自有模块都可导入、<code>himodel</code> 从不导入观测层</td>
+<td><code>astromartini</code> 被声明为依赖且确实被导入；每个转发的类要么就是上游对象、要么是它的子类，绝不是重新实现；仓库中不再有内嵌的 MARTINI 模块；<code>himodel</code> 既不导入 MARTINI 也不导入观测层</td>
 </tr>
 <tr>
 <td><code>test_cosmology.py</code></td>
@@ -137,8 +137,13 @@ text-decoration:none;background:var(--code-bg)}
 </tr>
 <tr>
 <td><code>test_data_products.py</code></td>
-<td>16</td>
+<td>21</td>
 <td><code>spectral_unit</code> 的处理，包括宽度换算回归测试、UV 网格的暴露、HDF5 往返</td>
+</tr>
+<tr>
+<td><code>test_group_products.py</code></td>
+<td>32</td>
+<td>群尺度产品：成员规则、ISM/CGM/IGM 分类、网格与 HDF5 格式</td>
 </tr>
 </tbody>
 </table>

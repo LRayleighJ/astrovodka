@@ -2,6 +2,8 @@
 
 Smooth SPH particles onto the pixel grid. All public kernels include **adaptive fallback**: when the pixel-to-smoothing-length ratio is too large, they automatically fall back to `DiracDeltaKernel` then `GaussianKernel(truncate=6)`.
 
+The implementation is MARTINI's: it is imported from `martini.sph_kernels` and re-exported here.
+
 ## Public Kernel Classes
 
 | Class | min_valid_size | Typical Simulation |

@@ -2,9 +2,10 @@
 
 **对 IllustrisTNG 星系的模拟分辨 HI（21 cm）观测。**
 
-astrovodka 把 SPH 粒子数据变成合成的射电数据立方体。它是
-[MARTINI](https://github.com/kyleaoman/martini) 的一个分支，把距离计算换
-成了真正的宇宙学距离，把中性气体的划分换成了有物理依据的 HI/H₂ 模型。
+astrovodka 把 SPH 粒子数据变成合成的射电数据立方体。它构建在
+[MARTINI](https://github.com/kyleaoman/martini) 之上 —— 观测流程由
+`astromartini` 包提供 —— 并把距离计算换成了真正的宇宙学距离，把中性气体的划分换成了
+有物理依据的 HI/H₂ 模型。
 
 英文文档见 [`docs/en/`](../en/index.md)。
 

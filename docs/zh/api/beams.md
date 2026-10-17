@@ -2,6 +2,8 @@
 
 对望远镜波束进行建模。内置：`GaussianBeam`（椭圆二维高斯）。
 
+实现来自 MARTINI：从 `martini.beams` 导入并在此转发。
+
 ## GaussianBeam
 
 ### `__init__(self, bmaj=15 arcsec, bmin=None, bpa=0 deg, truncate=4.0)`

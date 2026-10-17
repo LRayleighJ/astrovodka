@@ -44,7 +44,7 @@ Each arrow was checked by re-running both sides on identical inputs.
 ## The test suite
 
 ```bash
-python -m pytest tests/ -q      # 125 tests, ~14 s
+python -m pytest tests/ -q      # 162 tests, ~30 s
 ```
 
 It needs **no TNG data, no network and no optional dependencies**.
@@ -53,10 +53,11 @@ It needs **no TNG data, no network and no optional dependencies**.
 |---|---|---|
 | `test_hi_models.py` | 52 | Keyword selection across the four methods, config resolution, per-model invariants (fraction ranges, mass conservation, full-length output), the four methods genuinely differing from one another, `uv_mode` handling, the off-centre FFT UV regression, and the underlying physics |
 | `test_pipeline.py` | 13 | Cosmology mode, spectral-axis/velocity consistency, angular scale equals `r/D_A`, mass recovery at z = 0.02–1.0 |
-| `test_selfcontained.py` | 19 | No `import martini` anywhere (checked by AST), no `martini.*` in `sys.modules` after importing astrovodka, every vendored and own module importable, `himodel` never importing the observation layer |
+| `test_upstream_dependency.py` | 19 | `astromartini` is a declared dependency and is imported; every re-exported class is the upstream object or a subclass of it, never a reimplementation; no vendored MARTINI modules remain; `himodel` imports neither MARTINI nor the observation layer |
 | `test_cosmology.py` | 14 | Distances, H(z), both velocity conventions, observed frequency |
 | `test_docs_sync.py` | 11 | The generated HTML matches the Markdown; the English and Chinese trees stay parallel; relative links resolve |
-| `test_data_products.py` | 16 | `spectral_unit` handling including the width-conversion regression, UV grid exposure, HDF5 round-trip |
+| `test_data_products.py` | 21 | `spectral_unit` handling including the width-conversion regression, UV grid exposure, HDF5 round-trip |
+| `test_group_products.py` | 32 | Group-scale products: membership rules, ISM/CGM/IGM classification, grids and HDF5 format |
 
 Every defect fixed in 0.2.0 and 0.3.0 has a regression test.
 

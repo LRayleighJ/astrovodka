@@ -2,10 +2,11 @@
 
 **Mock resolved HI (21 cm) observations of IllustrisTNG galaxies.**
 
-astrovodka turns SPH particle data into synthetic radio data cubes. It is a fork
-of [MARTINI](https://github.com/kyleaoman/martini) that replaces the distance
-calculation with proper cosmological distances and the neutral-gas partition
-with physically motivated HI/H₂ models.
+astrovodka turns SPH particle data into synthetic radio data cubes. It is built
+on [MARTINI](https://github.com/kyleaoman/martini) — the `astromartini` package
+provides the observation machinery — and replaces the distance calculation with
+proper cosmological distances and the neutral-gas partition with physically
+motivated HI/H₂ models.
 
 中文文档见 [`docs/zh/`](../zh/index.md).
 

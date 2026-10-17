@@ -363,7 +363,7 @@ gp.plot_spectrum()</code></pre>
 <h3 id="4-光谱轴必须覆盖谱线而不只是气体">4. 光谱轴必须覆盖谱线，而不只是气体</h3>
 <p>见<a href="#数据立方体">数据立方体</a>一节：在粒子速度范围之外留出大约 <code>8σ</code>， 对有恒星形成的子晕大约就是 800 km/s。</p>
 <h2 id="与-martini-的差异">与 MARTINI 的差异</h2>
-<p>观测流水线是 MARTINI 的，是摘取融合并内嵌在仓库里的，而不是通过导入依赖的 获得。不同之处：</p>
+<p>观测流水线是 MARTINI 的：astrovodka 导入 <code>astromartini</code> 包，只在下表所列行为不同的 地方继承并覆盖，其余原样转发。不同之处：</p>
 <table>
 <thead>
 <tr>
@@ -433,7 +433,7 @@ gp.plot_spectrum()</code></pre>
 <p><code>SPHSource</code> 同时接受 <code>distance</code> + <code>h</code>（MARTINI 的接口）和 <code>redshift</code> + <code>cosmology</code>。在距离模式下 <code>D_L == D_A == distance</code>， 因此这条路径的行为与上游完全一致。</p>
 <h3 id="未实现的部分">未实现的部分</h3>
 <ul>
-<li><strong>只有 TNG 源。</strong> 上游的 EAGLE、Simba、FIRE、Magneticum、Colibre、SWIFT 和 <code>CombinedSource</code> 类都不存在 —— 把项目无法测试的源收进仓库， 就意味着发布没人能在这里检查的代码。</li>
+<li><strong>只转发 TNG 源。</strong> 上游的 EAGLE、Simba、FIRE、Magneticum、Colibre、SWIFT 和 <code>CombinedSource</code> 类仍可从 <code>martini.sources</code> 使用，但 <code>astrovodka.sources</code> 刻意不封装项目无法测试的源。</li>
 <li><strong>一个数据立方体中的多星系观测</strong>，也就是 <code>CombinedSource</code> 的用途。</li>
 <li><strong>大子晕的内存分块</strong> —— 三维网格是整体构建的。</li>
 </ul>

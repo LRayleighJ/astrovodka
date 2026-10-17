@@ -11,8 +11,10 @@ of smoothed-particle hydrodynamics simulations of galaxies, with:
 - Support for IllustrisTNG simulations with local data access
 
 The mock-observation machinery (data cubes, beams, spectral models, SPH
-kernels, noise) is MARTINI's, vendored into this package rather than imported
-from it, so astrovodka has no runtime dependency on `astromartini`.
+kernels, noise, the ``Martini`` driver and the SPH source class) is MARTINI's.
+astrovodka depends on the ``astromartini`` distribution, imports those classes
+from it, and subclasses them where its cosmology-aware behaviour differs. It no
+longer carries a vendored copy of MARTINI.
 """
 
 from .martini import Martini, GlobalProfile

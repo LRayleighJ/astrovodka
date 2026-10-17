@@ -96,6 +96,11 @@ conda activate astrovodka</code></pre>
 <td>Needed for <code>pyproject.toml</code>-only projects</td>
 </tr>
 <tr>
+<td><strong>astromartini</strong></td>
+<td>2.1.9</td>
+<td><strong>Required</strong> — the observation engine astrovodka imports and subclasses</td>
+</tr>
+<tr>
 <td>numpy</td>
 <td>1.20</td>
 <td>Core dependency</td>
@@ -116,9 +121,19 @@ conda activate astrovodka</code></pre>
 <td>Progress bars</td>
 </tr>
 <tr>
+<td>requests</td>
+<td>2.20</td>
+<td>Auto-installed: MARTINI 2.1.16+ imports it when <code>martini.sources</code> loads</td>
+</tr>
+<tr>
 <td>h5py</td>
 <td>3.0</td>
 <td><em>Optional but required for TNG data</em> — see below</td>
+</tr>
+<tr>
+<td>six</td>
+<td>1.10</td>
+<td>Optional: used by MARTINI's TNG I/O helpers</td>
 </tr>
 <tr>
 <td>matplotlib</td>
@@ -132,7 +147,7 @@ conda activate astrovodka</code></pre>
 </tr>
 </tbody>
 </table>
-<p><code>numpy</code>, <code>scipy</code>, <code>astropy</code> and <code>tqdm</code> are installed automatically with the package. The rest are opt-in extras, except that <strong>you need <code>h5py</code> for any TNG workflow</strong> — it is what reads the snapshot files, not just what writes HDF5 output.</p>
+<p><code>astromartini</code>, <code>numpy</code>, <code>scipy</code>, <code>astropy</code> and <code>tqdm</code> are installed automatically with the package. The rest are opt-in extras, except that <strong>you need <code>h5py</code> for any TNG workflow</strong> — it is what reads the snapshot files, not just what writes HDF5 output.</p>
 <p>Note that astrovodka uses <strong><code>multiprocess</code></strong>, not the standard library <code>multiprocessing</code>. MARTINI parallelises with <code>dill</code>-based serialisation, which the stdlib module does not provide. Installing <code>multiprocess</code> is only necessary if you pass <code>ncpu &gt; 1</code>.</p>
 <h3 id="hardware">Hardware</h3>
 <p>The package itself is light, but two features are memory-hungry:</p>
@@ -177,7 +192,7 @@ python -m pip install -e . --no-deps</code></pre>
 cfg = HIModelConfig(h=0.6774, z=0.0, boxsize_ckpc_per_h=75000.0, ngrid=64)
 result = compute_hi_mass(gas, model=&quot;K13_vol&quot;, cfg=cfg)
 print(result.m_hi_msun, result.m_h2_msun)</code></pre>
-<p>The package is laid out so that this works: <code>astrovodka.himodel</code> imports nothing from the observation layer, and <code>import astrovodka</code> does not import h5py or matplotlib. A test enforces both (<code>tests/test_selfcontained.py</code>).</p>
+<p>The package is laid out so that this works: <code>astrovodka.himodel</code> imports nothing from the observation layer (including MARTINI), and <code>import astrovodka</code> does not import h5py or matplotlib. A test enforces both (<code>tests/test_upstream_dependency.py</code>).</p>
 <hr>
 <h2 id="optional-dependencies">Optional dependencies</h2>
 <table>
@@ -192,7 +207,7 @@ print(result.m_hi_msun, result.m_h2_msun)</code></pre>
 <tbody>
 <tr>
 <td><code>hdf5</code></td>
-<td>h5py</td>
+<td>h5py, six</td>
 <td>Reading TNG snapshot and group catalogs; <code>write_hdf5</code>, <code>save_state</code>, <code>SubhaloDataProducts.save_hdf5</code></td>
 <td><strong>Any TNG workflow</strong></td>
 </tr>
@@ -314,14 +329,14 @@ python examples/en/astrovodka_demo.py --snapNum 99 --subID 113 --hiModel K13_vol
 <td><code>pip install -e ".[hdf5]"</code></td>
 </tr>
 <tr>
-<td><code>ModuleNotFoundError: No module named 'six'</code></td>
-<td>Older revisions of the vendored TNG I/O used <code>six</code></td>
-<td>Updated in 1.0.0; update your checkout</td>
+<td><code>ModuleNotFoundError: No module named 'six'</code> when constructing <code>TNGSource</code></td>
+<td>MARTINI's IllustrisTNG I/O helpers use <code>six</code></td>
+<td><code>pip install -e ".[hdf5]"</code> (the <code>hdf5</code> extra includes it)</td>
 </tr>
 <tr>
-<td><code>ModuleNotFoundError: No module named 'typing_extensions'</code> on Python 3.9/3.10</td>
-<td><code>typing.Self</code> is only in the 3.11 stdlib</td>
-<td><code>pip install typing_extensions</code>, or reinstall the package so the conditional dependency is resolved</td>
+<td><code>ModuleNotFoundError: No module named 'martini'</code></td>
+<td><code>astromartini</code> is a required dependency but was skipped (e.g. <code>pip install --no-deps</code>)</td>
+<td><code>pip install "astromartini&gt;=2.1.9"</code></td>
 </tr>
 <tr>
 <td><code>ModuleNotFoundError: No module named 'multiprocess'</code> when using <code>ncpu &gt; 1</code></td>
@@ -337,6 +352,11 @@ python examples/en/astrovodka_demo.py --snapNum 99 --subID 113 --hiModel K13_vol
 <td><code>ValueError: datacube padding insufficient for beam convolution</code></td>
 <td><code>write_fits</code> calls <code>drop_pad()</code>, so writing mid-pipeline removes the padding</td>
 <td><code>M.datacube.add_pad(M.beam.needs_pad())</code> before the next <code>convolve_beam()</code></td>
+</tr>
+<tr>
+<td><code>ValueError: s must be a scalar, or float array-like</code> inside <code>Martini.preview()</code></td>
+<td>Upstream MARTINI bug in 2.1.9–2.1.15, fixed in 2.1.17–2.1.18</td>
+<td><code>M.preview(point_scaling="fixed")</code>, or install MARTINI 2.1.17+ from GitHub</td>
 </tr>
 <tr>
 <td><code>FileNotFoundError: .../snapdir_099/...</code></td>
@@ -360,11 +380,11 @@ python examples/en/astrovodka_demo.py --snapNum 99 --subID 113 --hiModel K13_vol
 <p><strong>Python 3.9 is the floor and the version this release is tested on</strong>, together with 3.10 through 3.13 in CI. <code>pyproject.toml</code> declares <code>requires-python = "&gt;=3.9"</code>.</p>
 <p>Two details are worth knowing:</p>
 <ul>
-<li><code>astrovodka/datacube.py</code> uses <code>typing.Self</code>, which only reaches the standard library in Python 3.11. On 3.9 and 3.10 that falls back to <code>typing_extensions</code>, which is declared as a conditional dependency, so it is installed automatically on those versions.</li>
-<li><code>types.EllipsisType</code> (3.10+) is imported defensively, with a <code>type(Ellipsis)</code> fallback, so the annotation works on 3.9.</li>
+<li>The floor comes from <strong><code>astromartini</code></strong>: releases 2.1.9 through 2.1.15 support Python 3.9, while 2.1.16 and later require 3.10. pip resolves the newest MARTINI available for the interpreter, and astrovodka works with every released version — its rotation adapter detects the 2.1.16 API change at import time.</li>
+<li><strong><code>typing_extensions</code> is required on Python 3.9 and 3.10</strong>, because MARTINI's <code>datacube</code> uses <code>typing.Self</code> with a <code>typing_extensions</code> fallback but does not declare the dependency itself. astrovodka declares it for those versions.</li>
 </ul>
 <p>Because astropy 7 requires Python 3.11 and later, on Python 3.9 pip will resolve an older astropy (6.x), which is supported. The declared floor for astropy is 5.0.</p>
-<p>The vendored MARTINI observation machinery is not restyled here, but it is 3.9-clean and CI runs the whole suite on every supported version.</p>
+<p>MARTINI's observation machinery is not restyled here, but it is 3.9-clean and CI runs the whole suite on every supported version.</p>
 <footer>astrovodka &mdash; mock resolved HI observations of IllustrisTNG galaxies.
 Generated from the Markdown sources by <code>docs/build_html.py</code>.</footer>
 </div>

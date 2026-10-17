@@ -363,7 +363,7 @@ gp.plot_spectrum()</code></pre>
 <h3 id="4-the-spectral-axis-must-span-the-line-not-just-the-gas">4. The spectral axis must span the line, not just the gas</h3>
 <p>Covered under <a href="#the-data-cube">The data cube</a>: allow about <code>8σ</code> beyond the particle velocity range, or about 800 km/s for a star-forming subhalo.</p>
 <h2 id="differences-from-martini">Differences from MARTINI</h2>
-<p>The observation machinery is MARTINI's, vendored rather than imported. What differs:</p>
+<p>The observation machinery is MARTINI's: astrovodka imports the <code>astromartini</code> package, subclasses it where the behaviour below differs, and re-exports the rest unchanged. What differs:</p>
 <table>
 <thead>
 <tr>
@@ -433,7 +433,7 @@ gp.plot_spectrum()</code></pre>
 <p>Both <code>distance</code> + <code>h</code> (MARTINI's interface) and <code>redshift</code> + <code>cosmology</code> are accepted by <code>SPHSource</code>. In distance mode <code>D_L == D_A == distance</code>, so that path behaves exactly as upstream does.</p>
 <h3 id="what-is-not-implemented">What is not implemented</h3>
 <ul>
-<li><strong>Only TNG sources.</strong> Upstream's EAGLE, Simba, FIRE, Magneticum, Colibre, SWIFT and <code>CombinedSource</code> classes are absent — vendoring sources the project cannot test would mean shipping code nobody here can check.</li>
+<li><strong>Only TNG sources are re-exported.</strong> Upstream's EAGLE, Simba, FIRE, Magneticum, Colibre, SWIFT and <code>CombinedSource</code> classes remain available from <code>martini.sources</code>, but <code>astrovodka.sources</code> deliberately does not wrap sources the project cannot test.</li>
 <li><strong>Multi-galaxy observations in one cube</strong>, which is what <code>CombinedSource</code> is for.</li>
 <li><strong>Memory chunking</strong> for large subhalos — the 3D grids are built whole.</li>
 </ul>

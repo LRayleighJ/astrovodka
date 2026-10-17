@@ -51,6 +51,7 @@ text-decoration:none;background:var(--code-bg)}
 <nav class="lang"><a href="../../index.html">astrovodka documentation</a><a href="../../en/index.html">English</a></nav>
 <h1 id="astrovodkasph_kernels--sph-平滑核">astrovodka.sph_kernels — SPH 平滑核</h1>
 <p>把 SPH 粒子平滑到像素网格上。所有公开核都带<strong>自适应回退</strong>：当像素尺寸与平滑长度之比过大时，会自动回退到 <code>DiracDeltaKernel</code>，再回退到 <code>GaussianKernel(truncate=6)</code>。</p>
+<p>实现来自 MARTINI：从 <code>martini.sph_kernels</code> 导入并在此转发。</p>
 <h2 id="公开核类">公开核类</h2>
 <table>
 <thead>

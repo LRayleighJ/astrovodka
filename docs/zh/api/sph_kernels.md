@@ -2,6 +2,8 @@
 
 把 SPH 粒子平滑到像素网格上。所有公开核都带**自适应回退**：当像素尺寸与平滑长度之比过大时，会自动回退到 `DiracDeltaKernel`，再回退到 `GaussianKernel(truncate=6)`。
 
+实现来自 MARTINI：从 `martini.sph_kernels` 导入并在此转发。
+
 ## 公开核类
 
 | 核类 | min_valid_size | 典型模拟 |

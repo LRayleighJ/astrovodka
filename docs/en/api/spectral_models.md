@@ -2,6 +2,8 @@
 
 Models the 21-cm line profile per SPH particle.
 
+These classes subclass MARTINI's `GaussianSpectrum` and `DiracDeltaSpectrum`; the only addition is the luminosity-distance flux scale described in the module docstring.
+
 ## GaussianSpectrum
 
 ### `__init__(self, sigma=7 km/s, ncpu=None, spec_dtype=np.float64)`

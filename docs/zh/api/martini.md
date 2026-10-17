@@ -2,6 +2,8 @@
 
 `Martini` 类负责编排模拟观测流水线，把 source、DataCube、beam、noise、spectral model 与 SPH kernel 串联起来。
 
+这些类继承 `martini.martini.Martini` 与 `martini.martini.GlobalProfile`，流水线本身原样继承。
+
 ## Martini
 
 ### `__init__(self, *, source, datacube, beam=None, noise=None, sph_kernel, spectral_model, quiet=False)`

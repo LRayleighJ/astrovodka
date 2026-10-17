@@ -2,6 +2,8 @@
 
 The `Martini` class orchestrates the mock-observing pipeline by connecting source, DataCube, beam, noise, spectral model, and SPH kernel.
 
+These classes subclass `martini.martini.Martini` and `martini.martini.GlobalProfile`. The pipeline itself is inherited unchanged.
+
 ## Martini
 
 ### `__init__(self, *, source, datacube, beam=None, noise=None, sph_kernel, spectral_model, quiet=False)`

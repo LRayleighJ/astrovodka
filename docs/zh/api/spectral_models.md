@@ -2,6 +2,8 @@
 
 对每个 SPH 粒子的 21-cm 谱线轮廓建模。
 
+这些类继承 MARTINI 的 `GaussianSpectrum` 与 `DiracDeltaSpectrum`；唯一新增的是模块文档中说明的光度距离流量标度。
+
 ## GaussianSpectrum
 
 ### `__init__(self, sigma=7 km/s, ncpu=None, spec_dtype=np.float64)`

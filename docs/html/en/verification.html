@@ -99,7 +99,7 @@ text-decoration:none;background:var(--code-bg)}
 <p>The chain is: Diemer+2018's reference implementation (<code>TNGHI_GD14_model/gd14_model.py</code>) → the <code>TNGHIcalc</code> package → <code>astrovodka.himodel</code>. Each arrow was checked by re-running both sides on identical inputs.</p>
 <hr>
 <h2 id="the-test-suite">The test suite</h2>
-<pre><code class="language-bash">python -m pytest tests/ -q      # 125 tests, ~14 s</code></pre>
+<pre><code class="language-bash">python -m pytest tests/ -q      # 162 tests, ~30 s</code></pre>
 <p>It needs <strong>no TNG data, no network and no optional dependencies</strong>.</p>
 <table>
 <thead>
@@ -121,9 +121,9 @@ text-decoration:none;background:var(--code-bg)}
 <td>Cosmology mode, spectral-axis/velocity consistency, angular scale equals <code>r/D_A</code>, mass recovery at z = 0.02–1.0</td>
 </tr>
 <tr>
-<td><code>test_selfcontained.py</code></td>
+<td><code>test_upstream_dependency.py</code></td>
 <td>19</td>
-<td>No <code>import martini</code> anywhere (checked by AST), no <code>martini.*</code> in <code>sys.modules</code> after importing astrovodka, every vendored and own module importable, <code>himodel</code> never importing the observation layer</td>
+<td><code>astromartini</code> is a declared dependency and is imported; every re-exported class is the upstream object or a subclass of it, never a reimplementation; no vendored MARTINI modules remain; <code>himodel</code> imports neither MARTINI nor the observation layer</td>
 </tr>
 <tr>
 <td><code>test_cosmology.py</code></td>
@@ -137,8 +137,13 @@ text-decoration:none;background:var(--code-bg)}
 </tr>
 <tr>
 <td><code>test_data_products.py</code></td>
-<td>16</td>
+<td>21</td>
 <td><code>spectral_unit</code> handling including the width-conversion regression, UV grid exposure, HDF5 round-trip</td>
+</tr>
+<tr>
+<td><code>test_group_products.py</code></td>
+<td>32</td>
+<td>Group-scale products: membership rules, ISM/CGM/IGM classification, grids and HDF5 format</td>
 </tr>
 </tbody>
 </table>

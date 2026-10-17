@@ -19,7 +19,12 @@ from .himodel import (
     resolve,
 )
 from .himodel.uvfield import compute_galaxy_fft_uv
-from .sources._illustris_tools import loadHeader, loadSingle, loadSubset, getSnapOffsets
+from martini.sources._illustris_tools import (
+    getSnapOffsets,
+    loadHeader,
+    loadSingle,
+    loadSubset,
+)
 
 
 class SubhaloDataProducts:
@@ -162,7 +167,7 @@ class SubhaloDataProducts:
         )
         # Get DM particle mass from snapshot header (MassTable in snap file)
         import h5py as _h5py
-        from .sources._illustris_tools import snapPath
+        from martini.sources._illustris_tools import snapPath
         with _h5py.File(snapPath(basePath, snapNum), "r") as _snap:
             _mt = _snap["Header"].attrs.get("MassTable", [0.0, 0.0])
             dm_mass_per_particle = float(_mt[1]) * 1e10 / h  # Msun

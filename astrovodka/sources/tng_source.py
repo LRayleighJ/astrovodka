@@ -53,7 +53,7 @@ def _m200c_msun(basePath, snapNum, haloID, h):
     option on.
     """
     try:
-        from ._illustris_tools import loadSingle
+        from martini.sources._illustris_tools import loadSingle
 
         group = loadSingle(basePath, snapNum, haloID=int(haloID))
         m200 = group.get("Group_M_Crit200")
@@ -182,7 +182,7 @@ class TNGSource(SPHSource):
         dec: U.Quantity[U.deg] = 0.0 * U.deg,
         coordinate_frame: "BaseRADecFrame" = ICRS(),
     ):
-        from ._illustris_tools import (
+        from martini.sources._illustris_tools import (
             loadHeader,
             loadSingle,
             loadSubset,
@@ -278,7 +278,7 @@ class TNGSource(SPHSource):
 
         # --- Load DM particles and compute DM center of mass ---
         import h5py as _h5py
-        from ._illustris_tools import snapPath
+        from martini.sources._illustris_tools import snapPath
 
         print("  Loading DM particles...")
         if load_subhalo_only:
@@ -503,6 +503,7 @@ class TNGSource(SPHSource):
             xyz_g=xyz_g,
             vxyz_g=vxyz_g,
             hsm_g=hsm_g,
+            coordinate_frame=coordinate_frame,
         )
 
         print(f"  TNGSource initialized: {self.npart} particles")

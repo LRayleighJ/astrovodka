@@ -2,6 +2,8 @@
 
 Defines the output data cube grid: pixels, channels, and WCS.
 
+This class subclasses `martini.datacube.DataCube`. Everything except `spectral_unit` comes from MARTINI.
+
 ## Module Constants
 
 - **`HIfreq`** = `1.420405751e9 * U.Hz` — HI 21-cm rest frequency.

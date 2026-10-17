@@ -1,6 +1,6 @@
 # astrovodka.sources._illustris_tools — TNG 数据 I/O
 
-读取 IllustrisTNG 模拟数据的内部工具。移植自 `illustris_python` 工具包。
+读取 IllustrisTNG 模拟数据的内部工具，转发自 `martini.sources._illustris_tools`（其本身源自 `illustris_python` 工具包）。
 
 ### `loadHeader(basePath, snapNum)` → `dict`
 

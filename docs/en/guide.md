@@ -351,8 +351,9 @@ particle velocity range, or about 800 km/s for a star-forming subhalo.
 
 ## Differences from MARTINI
 
-The observation machinery is MARTINI's, vendored rather than imported. What
-differs:
+The observation machinery is MARTINI's: astrovodka imports the `astromartini`
+package, subclasses it where the behaviour below differs, and re-exports the
+rest unchanged. What differs:
 
 | | MARTINI | astrovodka |
 |---|---|---|
@@ -374,9 +375,10 @@ behaves exactly as upstream does.
 
 ### What is not implemented
 
-- **Only TNG sources.** Upstream's EAGLE, Simba, FIRE, Magneticum, Colibre, SWIFT
-  and `CombinedSource` classes are absent — vendoring sources the project cannot
-  test would mean shipping code nobody here can check.
+- **Only TNG sources are re-exported.** Upstream's EAGLE, Simba, FIRE,
+  Magneticum, Colibre, SWIFT and `CombinedSource` classes remain available from
+  `martini.sources`, but `astrovodka.sources` deliberately does not wrap sources
+  the project cannot test.
 - **Multi-galaxy observations in one cube**, which is what `CombinedSource` is
   for.
 - **Memory chunking** for large subhalos — the 3D grids are built whole.
